@@ -14,11 +14,12 @@
     "db:reset": "prisma db push --force-reset && npm run db:seed"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^0.12.3",
+    "@neondatabase/serverless": "^1.0.1",
     "@prisma/client": "^6.9.0",
     "next": "15.3.3",
     "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "react-dom": "19.0.0",
+    "recharts": "^2.15.3"
   },
   "devDependencies": {
     "@types/node": "^22",

@@ -132,6 +132,25 @@ export default function Milestones() {
       .map(([tag, count]) => ({ tag, count }))
   }
 
+  // 处理点击已存在标签
+  const handleTagClick = (tag: string) => {
+    const currentTags = formData.tags.split(',').map(t => t.trim()).filter(t => t)
+    
+    // 检查标签是否已存在
+    if (currentTags.includes(tag)) {
+      return // 如果已存在，不重复添加
+    }
+
+    // 添加标签
+    const newTags = currentTags.length > 0 ? `${formData.tags}, ${tag}` : tag
+    setFormData(prev => ({ ...prev, tags: newTags }))
+  }
+
+  // 获取当前输入的标签列表，用于判断标签是否已被选中
+  const getCurrentTags = () => {
+    return formData.tags.split(',').map(t => t.trim()).filter(t => t)
+  }
+
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto space-y-6">
@@ -211,7 +230,7 @@ export default function Milestones() {
       {/* Add/Edit Form */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-4">
               {editingMilestone ? '编辑里程碑' : '添加里程碑'}
             </h3>
@@ -269,6 +288,33 @@ export default function Milestones() {
                 <p className="text-xs text-gray-500 mt-1">
                   常用标签: 运动发展, 语言发展, 社交发展, 认知发展, 生活自理
                 </p>
+
+                {/* 已存在的标签 */}
+                {allTags.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs font-medium text-gray-700 mb-2">点击下方标签快速添加：</p>
+                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                      {allTags.map((tag) => {
+                        const isSelected = getCurrentTags().includes(tag)
+                        return (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => handleTagClick(tag)}
+                            disabled={isSelected}
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                              isSelected
+                                ? 'bg-purple-200 text-purple-800 cursor-not-allowed opacity-50'
+                                : 'bg-gray-100 text-gray-700 hover:bg-purple-100 hover:text-purple-700 cursor-pointer'
+                            }`}
+                          >
+                            #{tag} {isSelected && '✓'}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

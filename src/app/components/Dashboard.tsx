@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useBaby } from '@/hooks/useBaby'
 import { useGrowthRecords } from '@/hooks/useGrowthRecords'
 import { useMilestones } from '@/hooks/useMilestones'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface DashboardProps {
   setActiveTab: (tab: string) => void
@@ -44,59 +45,13 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
   // Get recent milestones (latest 3)
   const recentMilestones = milestones?.slice(0, 3) || []
 
-  const quickStats = [
-    {
-      title: '当前体重',
-      value: latestRecord?.weight ? `${latestRecord.weight} kg` : '暂无数据',
-      icon: '⚖️',
-      color: 'from-blue-500 to-blue-600'
-    },
-    {
-      title: '当前身高',
-      value: latestRecord?.height ? `${latestRecord.height} cm` : '暂无数据',
-      icon: '📏',
-      color: 'from-green-500 to-green-600'
-    },
-    {
-      title: '里程碑数',
-      value: `${milestones?.length || 0} 个`,
-      icon: '🏆',
-      color: 'from-purple-500 to-purple-600'
-    },
-    {
-      title: '年龄',
-      value: currentAge || '计算中...',
-      icon: '🎂',
-      color: 'from-pink-500 to-pink-600'
-    }
-  ]
-
-  const additionalStats = [
-    {
-      title: '成长记录',
-      value: `${records?.length || 0} 条`,
-      icon: '📊',
-      color: 'from-orange-500 to-orange-600'
-    },
-    {
-      title: '照片',
-      value: `0 张`,
-      icon: '📸',
-      color: 'from-indigo-500 to-indigo-600'
-    },
-    {
-      title: '最新记录',
-      value: latestRecord ? new Date(latestRecord.date).toLocaleDateString() : '暂无',
-      icon: '📅',
-      color: 'from-teal-500 to-teal-600'
-    },
-    {
-      title: '头围',
-      value: latestRecord?.headCircumference ? `${latestRecord.headCircumference} cm` : '暂无数据',
-      icon: '🧠',
-      color: 'from-cyan-500 to-cyan-600'
-    }
-  ]
+  // Prepare chart data
+  const chartData = records?.map(record => ({
+    date: new Date(record.date).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }),
+    fullDate: record.date,
+    体重: record.weight || null,
+    身高: record.height || null,
+  })).reverse() || [] // 反转数组以按时间正序显示
 
   if (babyLoading) {
     return (
@@ -126,250 +81,217 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="card">
-        <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white text-2xl">
-            {baby.gender === 'boy' ? '👦' : '👧'}
-          </div>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-800">你好，{baby.name}！</h1>
-            <p className="text-gray-600">{currentAge}</p>
-            <p className="text-sm text-gray-500">
-              出生于 {new Date(baby.birthDate).toLocaleDateString()}
-            </p>
-          </div>
-          <button 
-            onClick={() => setActiveTab('baby')}
-            className="btn-secondary"
-          >
-            编辑信息
-          </button>
-        </div>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {quickStats.map((stat, index) => (
-          <div key={index} className="card">
-            <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${stat.color} flex items-center justify-center text-white text-xl mb-3`}>
-              {stat.icon}
-            </div>
-            <h3 className="text-sm font-medium text-gray-600 mb-1">{stat.title}</h3>
-            <p className="text-lg font-bold text-gray-800">{stat.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Additional Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {additionalStats.map((stat, index) => (
-          <div key={index} className="card text-center">
-            <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${stat.color} flex items-center justify-center text-white text-lg mb-2 mx-auto`}>
-              {stat.icon}
-            </div>
-            <h3 className="text-xs font-medium text-gray-600 mb-1">{stat.title}</h3>
-            <p className="text-sm font-bold text-gray-800">{stat.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Recent Milestones */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <span className="mr-2">🏆</span>
-            最近里程碑
-          </h3>
-          {milestonesLoading ? (
-            <div className="text-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-2"></div>
-              <p className="text-sm text-gray-600">加载中...</p>
-            </div>
-          ) : recentMilestones.length > 0 ? (
-            <div className="space-y-3">
-              {recentMilestones.map((milestone) => (
-                <div key={milestone.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <span className="text-2xl">🎯</span>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-800">{milestone.title}</p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(milestone.date).toLocaleDateString()}
-                    </p>
-                    {milestone.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {milestone.tags.slice(0, 2).map((tag, index) => (
-                          <span key={index} className="text-xs bg-purple-100 text-purple-600 px-1 py-0.5 rounded">
-                            #{tag}
-                          </span>
-                        ))}
-                        {milestone.tags.length > 2 && (
-                          <span className="text-xs text-gray-500">+{milestone.tags.length - 2}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
+    <div className="min-h-screen p-4 lg:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* 统一的顶部卡片网格 */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-6">
+          {/* 宝宝信息卡片 - 占据更多空间 */}
+          <div className="col-span-2 md:col-span-3 lg:col-span-2">
+            <div className="card p-6 h-full bg-gradient-to-br from-pink-50 to-purple-50 border-2 border-pink-200 min-h-[140px]">
+              <div className="flex items-center space-x-4 h-full">
+                <div className="w-20 h-20 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white text-3xl flex-shrink-0">
+                  {baby.gender === 'boy' ? '👦' : '👧'}
                 </div>
-              ))}
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-xl font-bold text-gray-800 truncate mb-1">{baby.name}</h1>
+                  <p className="text-gray-600 text-base mb-1">{currentAge}</p>
+                  <p className="text-sm text-gray-500 truncate mb-2">
+                    出生于 {new Date(baby.birthDate).toLocaleDateString()}
+                  </p>
+                  <button 
+                    onClick={() => setActiveTab('baby')}
+                    className="text-sm text-purple-600 hover:text-purple-800 font-medium"
+                  >
+                    编辑信息 →
+                  </button>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <span className="text-4xl mb-2 block">🏆</span>
-              <p>还没有记录里程碑</p>
-              <p className="text-sm mt-1">点击下方按钮开始记录</p>
+          </div>
+
+          {/* 体重卡片 */}
+          <div className="card p-6 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 min-h-[140px]">
+            <div className="flex flex-col items-center text-center h-full justify-center">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl mb-3">
+                ⚖️
+              </div>
+              <h3 className="text-sm font-medium text-gray-600 mb-2">当前体重</h3>
+              <p className="text-base font-bold text-gray-800">{latestRecord?.weight ? `${latestRecord.weight} kg` : '暂无数据'}</p>
             </div>
-          )}
-          <button 
-            onClick={() => setActiveTab('milestones')}
-            className="w-full mt-4 btn-secondary"
-          >
-            {recentMilestones.length > 0 ? '查看全部里程碑' : '记录第一个里程碑'}
-          </button>
+          </div>
+
+          {/* 身高卡片 */}
+          <div className="card p-6 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 min-h-[140px]">
+            <div className="flex flex-col items-center text-center h-full justify-center">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center text-white text-xl mb-3">
+                📏
+              </div>
+              <h3 className="text-sm font-medium text-gray-600 mb-2">当前身高</h3>
+              <p className="text-base font-bold text-gray-800">{latestRecord?.height ? `${latestRecord.height} cm` : '暂无数据'}</p>
+            </div>
+          </div>
+
+          {/* 里程碑数卡片 */}
+          <div className="card p-6 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 min-h-[140px]">
+            <div className="flex flex-col items-center text-center h-full justify-center">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white text-xl mb-3">
+                🏆
+              </div>
+              <h3 className="text-sm font-medium text-gray-600 mb-2">里程碑数</h3>
+              <p className="text-base font-bold text-gray-800">{milestones?.length || 0} 个</p>
+            </div>
+          </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="card">
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <span className="mr-2">⚡</span>
-            快速操作
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            <button 
-              onClick={() => setActiveTab('growth')}
-              className="flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg hover:shadow-md transition-all duration-200"
-            >
-              <span className="text-2xl">📊</span>
-              <span className="text-sm font-medium text-gray-700">记录成长</span>
-            </button>
+        {/* 下方左右布局 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* 左下角：最近里程碑 */}
+          <div className="card p-6 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 min-h-[400px]">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+              <span className="mr-2">🏆</span>
+              最近里程碑
+            </h3>
+            {milestonesLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500 mx-auto mb-3"></div>
+                <p className="text-base text-gray-600">加载中...</p>
+              </div>
+            ) : recentMilestones.length > 0 ? (
+              <div className="space-y-3 mb-4 flex-1">
+                {recentMilestones.map((milestone) => (
+                  <div key={milestone.id} className="flex items-start space-x-4 p-4 bg-white/70 backdrop-blur-sm rounded-lg border border-white/50">
+                    <span className="text-2xl">🎯</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-800 text-base mb-1">{milestone.title}</p>
+                      <p className="text-sm text-gray-500 mb-2">
+                        {new Date(milestone.date).toLocaleDateString()}
+                      </p>
+                      {milestone.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {milestone.tags.slice(0, 3).map((tag, index) => (
+                            <span key={index} className="text-xs bg-amber-200/70 text-amber-800 px-2 py-1 rounded-full">
+                              #{tag}
+                            </span>
+                          ))}
+                          {milestone.tags.length > 3 && (
+                            <span className="text-xs text-gray-500 px-2 py-1">+{milestone.tags.length - 3}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-gray-500 flex-1 flex flex-col justify-center">
+                <span className="text-4xl mb-4 block">🏆</span>
+                <p className="text-base mb-2">还没有记录里程碑</p>
+                <p className="text-sm text-gray-400">记录宝宝的重要成长时刻</p>
+              </div>
+            )}
             <button 
               onClick={() => setActiveTab('milestones')}
-              className="flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg hover:shadow-md transition-all duration-200"
+              className="w-full btn-primary bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 border-0 py-3"
             >
-              <span className="text-2xl">🏆</span>
-              <span className="text-sm font-medium text-gray-700">新里程碑</span>
+              {recentMilestones.length > 0 ? '查看全部里程碑' : '记录第一个里程碑'}
             </button>
-            <button 
-              onClick={() => setActiveTab('photos')}
-              className="flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg hover:shadow-md transition-all duration-200"
-            >
-              <span className="text-2xl">📸</span>
-              <span className="text-sm font-medium text-gray-700">上传照片</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('baby')}
-              className="flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg hover:shadow-md transition-all duration-200"
-            >
-              <span className="text-2xl">👶</span>
-              <span className="text-sm font-medium text-gray-700">宝宝信息</span>
-            </button>
+          </div>
+
+          {/* 右下角：成长记录图表 */}
+          <div className="card p-6 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 min-h-[400px] flex flex-col">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+              <span className="mr-2">📈</span>
+              成长趋势图表
+            </h3>
+            {chartData.length > 0 ? (
+              <>
+                <div className="h-72 bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-white/50">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis 
+                        dataKey="date" 
+                        tick={{ fontSize: 12, fill: '#6b7280' }}
+                        stroke="#9ca3af"
+                      />
+                      <YAxis 
+                        yAxisId="weight"
+                        orientation="left"
+                        tick={{ fontSize: 12, fill: '#6b7280' }}
+                        stroke="#9ca3af"
+                        label={{ value: '体重(kg)', angle: -90, position: 'insideLeft', style: { fontSize: '12px', fill: '#6b7280' } }}
+                      />
+                      <YAxis 
+                        yAxisId="height"
+                        orientation="right"
+                        tick={{ fontSize: 12, fill: '#6b7280' }}
+                        stroke="#9ca3af"
+                        label={{ value: '身高(cm)', angle: 90, position: 'insideRight', style: { fontSize: '12px', fill: '#6b7280' } }}
+                      />
+                      <Tooltip 
+                        labelFormatter={(label) => `日期: ${label}`}
+                        formatter={(value: any, name: string) => [
+                          value ? `${value} ${name === '体重' ? 'kg' : 'cm'}` : '无数据',
+                          name
+                        ]}
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          fontSize: '14px'
+                        }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: '14px' }} />
+                      <Line
+                        yAxisId="weight"
+                        type="monotone"
+                        dataKey="体重"
+                        stroke="#0891b2"
+                        strokeWidth={3}
+                        dot={{ fill: '#0891b2', strokeWidth: 2, r: 5 }}
+                        connectNulls={false}
+                      />
+                      <Line
+                        yAxisId="height"
+                        type="monotone"
+                        dataKey="身高"
+                        stroke="#059669"
+                        strokeWidth={3}
+                        dot={{ fill: '#059669', strokeWidth: 2, r: 5 }}
+                        connectNulls={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-4 flex justify-center">
+                  <button 
+                    onClick={() => setActiveTab('growth')}
+                    className="btn-primary bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 border-0 px-6 py-3"
+                  >
+                    查看详细记录
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex-1 text-center py-12 bg-white/70 backdrop-blur-sm rounded-lg border border-white/50 flex flex-col justify-center">
+                  <span className="text-4xl mb-4 block">📊</span>
+                  <p className="text-gray-600 text-base mb-2">还没有成长记录</p>
+                  <p className="text-sm text-gray-500 mb-4">添加至少2条记录查看趋势</p>
+                </div>
+                <div className="mt-4 flex justify-center">
+                  <button 
+                    onClick={() => setActiveTab('growth')}
+                    className="btn-primary bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 border-0 px-6 py-3"
+                  >
+                    添加成长记录
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Growth Trend Summary */}
-      {records && records.length > 1 && (
-        <div className="card">
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <span className="mr-2">📈</span>
-            成长趋势
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Weight Trend */}
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-blue-800">体重变化</span>
-                <span className="text-2xl">⚖️</span>
-              </div>
-              {records.length >= 2 && records[0]?.weight && records[1]?.weight && (
-                <div className="text-sm text-blue-700">
-                  {(() => {
-                    const latest = records[0].weight!
-                    const previous = records[1].weight!
-                    const change = latest - previous
-                    const changeKg = change.toFixed(1)
-                    return (
-                      <span className={change >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        {change >= 0 ? '+' : ''}{changeKg} kg
-                      </span>
-                    )
-                  })()}
-                </div>
-              )}
-              {(!records[0]?.weight || !records[1]?.weight) && records.length >= 2 && (
-                <div className="text-sm text-gray-500">
-                  缺少体重数据
-                </div>
-              )}
-            </div>
-
-            {/* Height Trend */}
-            <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-green-800">身高变化</span>
-                <span className="text-2xl">📏</span>
-              </div>
-              {records.length >= 2 && records[0]?.height && records[1]?.height && (
-                <div className="text-sm text-green-700">
-                  {(() => {
-                    const latest = records[0].height!
-                    const previous = records[1].height!
-                    const change = latest - previous
-                    return (
-                      <span className={change >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        {change >= 0 ? '+' : ''}{change} cm
-                      </span>
-                    )
-                  })()}
-                </div>
-              )}
-              {(!records[0]?.height || !records[1]?.height) && records.length >= 2 && (
-                <div className="text-sm text-gray-500">
-                  缺少身高数据
-                </div>
-              )}
-            </div>
-
-            {/* Records Count */}
-            <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-purple-800">记录次数</span>
-                <span className="text-2xl">📊</span>
-              </div>
-              <div className="text-sm text-purple-700">
-                总计 {records.length} 次记录
-              </div>
-            </div>
-          </div>
-          <button 
-            onClick={() => setActiveTab('growth')}
-            className="w-full mt-4 btn-secondary"
-          >
-            查看详细趋势
-          </button>
-        </div>
-      )}
-
-      {/* Empty State for Growth Records */}
-      {records && records.length === 0 && (
-        <div className="card">
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <span className="mr-2">📈</span>
-            成长趋势
-          </h3>
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-8 rounded-lg text-center">
-            <span className="text-4xl mb-4 block">📊</span>
-            <p className="text-gray-600 mb-4">还没有成长记录</p>
-            <p className="text-sm text-gray-500 mb-4">开始记录宝宝的体重、身高等数据，查看成长趋势</p>
-            <button 
-              onClick={() => setActiveTab('growth')}
-              className="btn-primary"
-            >
-              添加第一条成长记录
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 } 

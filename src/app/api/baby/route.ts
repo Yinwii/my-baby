@@ -12,7 +12,6 @@ export async function GET() {
             growthRecords: true,
             milestones: true,
             photos: true,
-            diaryEntries: true,
           },
         },
       },
