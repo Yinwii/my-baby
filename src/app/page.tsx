@@ -15,7 +15,7 @@ export default function Home() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard />
+        return <Dashboard setActiveTab={setActiveTab} />
       case 'babyInfo':
         return <BabyInfo />
       case 'growth':
@@ -27,7 +27,7 @@ export default function Home() {
       case 'diary':
         return <Diary />
       default:
-        return <Dashboard />
+        return <Dashboard setActiveTab={setActiveTab} />
     }
   }
 

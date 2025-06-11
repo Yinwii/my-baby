@@ -6,7 +6,11 @@ import { useGrowthRecords } from '@/hooks/useGrowthRecords'
 import { useMilestones } from '@/hooks/useMilestones'
 import { useDiaryEntries } from '@/hooks/useDiaryEntries'
 
-export default function Dashboard() {
+interface DashboardProps {
+  setActiveTab: (tab: string) => void
+}
+
+export default function Dashboard({ setActiveTab }: DashboardProps) {
   const { baby, loading: babyLoading } = useBaby()
   const { records, loading: recordsLoading } = useGrowthRecords(baby?.id)
   const { milestones, loading: milestonesLoading } = useMilestones(baby?.id)
@@ -114,7 +118,7 @@ export default function Dashboard() {
         <h2 className="text-2xl font-bold text-gray-800 mb-4">欢迎使用宝宝成长记录</h2>
         <p className="text-gray-600 mb-6">请先添加宝宝信息开始记录成长历程</p>
         <button 
-          onClick={() => window.location.href = '/?tab=baby-info'}
+          onClick={() => setActiveTab('babyInfo')}
           className="btn-primary"
         >
           添加宝宝信息
@@ -210,7 +214,7 @@ export default function Dashboard() {
             </div>
           )}
           <button 
-            onClick={() => window.location.href = '/?tab=milestones'}
+            onClick={() => setActiveTab('milestones')}
             className="w-full mt-4 btn-secondary"
           >
             {recentMilestones.length > 0 ? '查看全部里程碑' : '记录第一个里程碑'}
@@ -225,28 +229,28 @@ export default function Dashboard() {
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <button 
-              onClick={() => window.location.href = '/?tab=growth-record'}
+              onClick={() => setActiveTab('growth')}
               className="flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg hover:shadow-md transition-all duration-200"
             >
               <span className="text-2xl">📊</span>
               <span className="text-sm font-medium text-gray-700">记录成长</span>
             </button>
             <button 
-              onClick={() => window.location.href = '/?tab=milestones'}
+              onClick={() => setActiveTab('milestones')}
               className="flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg hover:shadow-md transition-all duration-200"
             >
               <span className="text-2xl">🏆</span>
               <span className="text-sm font-medium text-gray-700">新里程碑</span>
             </button>
             <button 
-              onClick={() => window.location.href = '/?tab=photo-gallery'}
+              onClick={() => setActiveTab('photos')}
               className="flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg hover:shadow-md transition-all duration-200"
             >
               <span className="text-2xl">📸</span>
               <span className="text-sm font-medium text-gray-700">上传照片</span>
             </button>
             <button 
-              onClick={() => window.location.href = '/?tab=diary'}
+              onClick={() => setActiveTab('diary')}
               className="flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg hover:shadow-md transition-all duration-200"
             >
               <span className="text-2xl">📝</span>
@@ -331,7 +335,7 @@ export default function Dashboard() {
             </div>
           </div>
           <button 
-            onClick={() => window.location.href = '/?tab=growth-record'}
+            onClick={() => setActiveTab('growth')}
             className="w-full mt-4 btn-secondary"
           >
             查看详细趋势
@@ -351,7 +355,7 @@ export default function Dashboard() {
             <p className="text-gray-600 mb-4">还没有成长记录</p>
             <p className="text-sm text-gray-500 mb-4">开始记录宝宝的体重、身高等数据，查看成长趋势</p>
             <button 
-              onClick={() => window.location.href = '/?tab=growth-record'}
+              onClick={() => setActiveTab('growth')}
               className="btn-primary"
             >
               添加第一条成长记录
