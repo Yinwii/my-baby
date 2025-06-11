@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         date: new Date(data.date),
         title: data.title,
         description: data.description,
-        category: data.category,
+        tags: data.tags || [],
       },
     })
 

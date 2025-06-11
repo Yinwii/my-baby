@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useBaby } from '@/hooks/useBaby'
 import { useGrowthRecords } from '@/hooks/useGrowthRecords'
 import { useMilestones } from '@/hooks/useMilestones'
-import { useDiaryEntries } from '@/hooks/useDiaryEntries'
 
 interface DashboardProps {
   setActiveTab: (tab: string) => void
@@ -14,7 +13,6 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
   const { baby, loading: babyLoading } = useBaby()
   const { records, loading: recordsLoading } = useGrowthRecords(baby?.id)
   const { milestones, loading: milestonesLoading } = useMilestones(baby?.id)
-  const { entries, loading: entriesLoading } = useDiaryEntries(baby?.id)
 
   const [currentAge, setCurrentAge] = useState('')
 
@@ -81,9 +79,9 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
       color: 'from-orange-500 to-orange-600'
     },
     {
-      title: '日记条目',
-      value: `${entries?.length || 0} 篇`,
-      icon: '📝',
+      title: '照片',
+      value: `0 张`,
+      icon: '📸',
       color: 'from-indigo-500 to-indigo-600'
     },
     {
@@ -116,9 +114,9 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
       <div className="text-center py-12">
         <div className="text-6xl mb-4">👶</div>
         <h2 className="text-2xl font-bold text-gray-800 mb-4">欢迎使用宝宝成长记录</h2>
-        <p className="text-gray-600 mb-6">请先添加宝宝信息开始记录成长历程</p>
+        <p className="text-gray-600 mb-6">开始记录宝宝的成长足迹吧！</p>
         <button 
-          onClick={() => setActiveTab('babyInfo')}
+          onClick={() => setActiveTab('baby')}
           className="btn-primary"
         >
           添加宝宝信息
@@ -128,58 +126,61 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="text-center">
-        <div className="inline-flex items-center space-x-3 bg-gradient-to-r from-pink-100 to-purple-100 px-6 py-4 rounded-full">
-          <span className="text-4xl">👶</span>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">{baby.name}</h2>
-            <p className="text-gray-600">
+      <div className="card">
+        <div className="flex items-center space-x-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white text-2xl">
+            {baby.gender === 'boy' ? '👦' : '👧'}
+          </div>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-gray-800">你好，{baby.name}！</h1>
+            <p className="text-gray-600">{currentAge}</p>
+            <p className="text-sm text-gray-500">
               出生于 {new Date(baby.birthDate).toLocaleDateString()}
-              {baby.birthTime && ` ${baby.birthTime}`}
             </p>
           </div>
+          <button 
+            onClick={() => setActiveTab('baby')}
+            className="btn-secondary"
+          >
+            编辑信息
+          </button>
         </div>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {quickStats.map((stat, index) => (
           <div key={index} className="card">
-            <div className={`flex items-center space-x-4 p-4 rounded-lg bg-gradient-to-r ${stat.color} text-white`}>
-              <span className="text-3xl">{stat.icon}</span>
-              <div>
-                <p className="text-sm opacity-90">{stat.title}</p>
-                <p className="text-xl font-bold">{stat.value}</p>
-              </div>
+            <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${stat.color} flex items-center justify-center text-white text-xl mb-3`}>
+              {stat.icon}
             </div>
+            <h3 className="text-sm font-medium text-gray-600 mb-1">{stat.title}</h3>
+            <p className="text-lg font-bold text-gray-800">{stat.value}</p>
           </div>
         ))}
       </div>
 
       {/* Additional Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {additionalStats.map((stat, index) => (
-          <div key={index} className="card">
-            <div className={`flex items-center space-x-4 p-4 rounded-lg bg-gradient-to-r ${stat.color} text-white`}>
-              <span className="text-3xl">{stat.icon}</span>
-              <div>
-                <p className="text-sm opacity-90">{stat.title}</p>
-                <p className="text-xl font-bold">{stat.value}</p>
-              </div>
+          <div key={index} className="card text-center">
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${stat.color} flex items-center justify-center text-white text-lg mb-2 mx-auto`}>
+              {stat.icon}
             </div>
+            <h3 className="text-xs font-medium text-gray-600 mb-1">{stat.title}</h3>
+            <p className="text-sm font-bold text-gray-800">{stat.value}</p>
           </div>
         ))}
       </div>
 
-      {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Milestones */}
+      {/* Recent Milestones */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">
           <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
             <span className="mr-2">🏆</span>
-            最新里程碑
+            最近里程碑
           </h3>
           {milestonesLoading ? (
             <div className="text-center py-4">
@@ -188,20 +189,26 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
             </div>
           ) : recentMilestones.length > 0 ? (
             <div className="space-y-3">
-              {recentMilestones.map((milestone, index) => (
+              {recentMilestones.map((milestone) => (
                 <div key={milestone.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <span className="text-2xl">
-                    {milestone.category === 'motor' && '🏃'}
-                    {milestone.category === 'language' && '🗣️'}
-                    {milestone.category === 'social' && '👥'}
-                    {milestone.category === 'cognitive' && '🧠'}
-                    {milestone.category === 'self_care' && '🍽️'}
-                  </span>
+                  <span className="text-2xl">🎯</span>
                   <div className="flex-1">
                     <p className="font-medium text-gray-800">{milestone.title}</p>
                     <p className="text-sm text-gray-500">
                       {new Date(milestone.date).toLocaleDateString()}
                     </p>
+                    {milestone.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {milestone.tags.slice(0, 2).map((tag, index) => (
+                          <span key={index} className="text-xs bg-purple-100 text-purple-600 px-1 py-0.5 rounded">
+                            #{tag}
+                          </span>
+                        ))}
+                        {milestone.tags.length > 2 && (
+                          <span className="text-xs text-gray-500">+{milestone.tags.length - 2}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -250,11 +257,11 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
               <span className="text-sm font-medium text-gray-700">上传照片</span>
             </button>
             <button 
-              onClick={() => setActiveTab('diary')}
+              onClick={() => setActiveTab('baby')}
               className="flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg hover:shadow-md transition-all duration-200"
             >
-              <span className="text-2xl">📝</span>
-              <span className="text-sm font-medium text-gray-700">写日记</span>
+              <span className="text-2xl">👶</span>
+              <span className="text-sm font-medium text-gray-700">宝宝信息</span>
             </button>
           </div>
         </div>

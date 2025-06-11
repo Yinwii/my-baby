@@ -8,11 +8,10 @@ interface NavigationProps {
 export default function Navigation({ activeTab, setActiveTab }: NavigationProps) {
   const navItems = [
     { id: 'dashboard', label: '首页', icon: '🏠' },
-    { id: 'babyInfo', label: '宝宝信息', icon: '👶' },
+    { id: 'baby', label: '宝宝信息', icon: '👶' },
     { id: 'growth', label: '成长记录', icon: '📊' },
     { id: 'milestones', label: '里程碑', icon: '🏆' },
     { id: 'photos', label: '照片墙', icon: '📸' },
-    { id: 'diary', label: '育儿日记', icon: '📝' },
   ]
 
   return (

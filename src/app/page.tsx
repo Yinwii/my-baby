@@ -7,7 +7,6 @@ import BabyInfo from './components/BabyInfo'
 import GrowthRecord from './components/GrowthRecord'
 import Milestones from './components/Milestones'
 import PhotoGallery from './components/PhotoGallery'
-import Diary from './components/Diary'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -16,7 +15,7 @@ export default function Home() {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard setActiveTab={setActiveTab} />
-      case 'babyInfo':
+      case 'baby':
         return <BabyInfo />
       case 'growth':
         return <GrowthRecord />
@@ -24,8 +23,6 @@ export default function Home() {
         return <Milestones />
       case 'photos':
         return <PhotoGallery />
-      case 'diary':
-        return <Diary />
       default:
         return <Dashboard setActiveTab={setActiveTab} />
     }

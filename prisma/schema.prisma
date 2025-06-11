@@ -33,7 +33,6 @@ model Baby {
   growthRecords   GrowthRecord[]
   milestones      Milestone[]
   photos          Photo[]
-  diaryEntries    DiaryEntry[]
 
   @@map("babies")
 }
@@ -62,7 +61,7 @@ model Milestone {
   date        DateTime
   title       String
   description String
-  category    String   // 'motor', 'language', 'social', 'cognitive', 'self_care'
+  tags        String[] // Array of tag strings for categorization
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -87,24 +86,5 @@ model Photo {
   baby        Baby     @relation(fields: [babyId], references: [id], onDelete: Cascade)
 
   @@map("photos")
-  @@index([babyId, date])
-}
-
-model DiaryEntry {
-  id        String   @id @default(cuid())
-  babyId    String
-  date      DateTime
-  title     String
-  content   String
-  mood      String   // 'happy', 'excited', 'proud', 'tired', 'worried', 'peaceful'
-  weather   String?  // 'sunny', 'cloudy', 'rainy', 'snowy'
-  tags      String[] // Array of tag strings
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  baby      Baby     @relation(fields: [babyId], references: [id], onDelete: Cascade)
-
-  @@map("diary_entries")
   @@index([babyId, date])
 }

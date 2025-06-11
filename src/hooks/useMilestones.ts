@@ -6,7 +6,7 @@ interface Milestone {
   date: string
   title: string
   description: string
-  category: string
+  tags: string[]
   createdAt: string
   updatedAt: string
 }

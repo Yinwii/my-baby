@@ -9,16 +9,8 @@ interface Milestone {
   date: string
   title: string
   description: string
-  category: string
+  tags: string[]
 }
-
-const categories = [
-  { id: 'motor', name: '运动发展', icon: '🏃', color: 'bg-blue-50 text-blue-600' },
-  { id: 'language', name: '语言发展', icon: '🗣️', color: 'bg-green-50 text-green-600' },
-  { id: 'social', name: '社交发展', icon: '👥', color: 'bg-purple-50 text-purple-600' },
-  { id: 'cognitive', name: '认知发展', icon: '🧠', color: 'bg-orange-50 text-orange-600' },
-  { id: 'self_care', name: '生活自理', icon: '🍽️', color: 'bg-pink-50 text-pink-600' }
-]
 
 export default function Milestones() {
   const { baby } = useBaby()
@@ -30,7 +22,7 @@ export default function Milestones() {
     date: new Date().toISOString().split('T')[0],
     title: '',
     description: '',
-    category: 'motor'
+    tags: ''
   })
 
   const resetForm = () => {
@@ -38,7 +30,7 @@ export default function Milestones() {
       date: new Date().toISOString().split('T')[0],
       title: '',
       description: '',
-      category: 'motor'
+      tags: ''
     })
     setEditingMilestone(null)
     setShowForm(false)
@@ -61,7 +53,7 @@ export default function Milestones() {
         date: formData.date,
         title: formData.title,
         description: formData.description,
-        category: formData.category,
+        tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
       }
 
       if (editingMilestone) {
@@ -85,7 +77,7 @@ export default function Milestones() {
       date: milestone.date.split('T')[0],
       title: milestone.title,
       description: milestone.description,
-      category: milestone.category
+      tags: milestone.tags.join(', ')
     })
     setShowForm(true)
   }
@@ -100,17 +92,6 @@ export default function Milestones() {
       console.error('Error deleting milestone:', error)
       alert('删除失败，请重试')
     }
-  }
-
-  const getCategoryInfo = (categoryId: string) => {
-    return categories.find(cat => cat.id === categoryId) || categories[0]
-  }
-
-  const getCategoryStats = () => {
-    return categories.map(category => ({
-      ...category,
-      count: milestones.filter(m => m.category === category.id).length
-    }))
   }
 
   const calculateAge = (date: string) => {
@@ -132,6 +113,23 @@ export default function Milestones() {
       const months = Math.floor((diffDays % 365) / 30)
       return `${years}岁${months}个月`
     }
+  }
+
+  // 获取所有使用的标签
+  const allTags = [...new Set(milestones.flatMap(m => m.tags))]
+
+  // 获取标签统计
+  const getTagStats = () => {
+    const tagCounts: Record<string, number> = {}
+    milestones.forEach(milestone => {
+      milestone.tags.forEach(tag => {
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1
+      })
+    })
+    return Object.entries(tagCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 6)
+      .map(([tag, count]) => ({ tag, count }))
   }
 
   if (loading) {
@@ -171,15 +169,43 @@ export default function Milestones() {
         </button>
       </div>
 
-      {/* Category Statistics */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {getCategoryStats().map(category => (
-          <div key={category.id} className="card text-center">
-            <div className="text-3xl mb-2">{category.icon}</div>
-            <div className="text-sm text-gray-600 mb-1">{category.name}</div>
-            <div className="text-2xl font-bold text-gray-800">{category.count}</div>
+      {/* Tag Statistics */}
+      {allTags.length > 0 && (
+        <div className="card">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">热门标签</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {getTagStats().map(({ tag, count }) => (
+              <div key={tag} className="text-center p-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+                <div className="text-2xl mb-1">🏷️</div>
+                <div className="text-sm text-gray-600 mb-1">{tag}</div>
+                <div className="text-lg font-bold text-purple-600">{count}</div>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+      )}
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="card text-center">
+          <div className="text-3xl mb-2">🏆</div>
+          <div className="text-sm text-gray-600 mb-1">总里程碑</div>
+          <div className="text-2xl font-bold text-purple-600">{milestones.length}</div>
+        </div>
+
+        <div className="card text-center">
+          <div className="text-3xl mb-2">🏷️</div>
+          <div className="text-sm text-gray-600 mb-1">使用标签</div>
+          <div className="text-2xl font-bold text-blue-600">{allTags.length}</div>
+        </div>
+
+        <div className="card text-center">
+          <div className="text-3xl mb-2">📅</div>
+          <div className="text-sm text-gray-600 mb-1">最新记录</div>
+          <div className="text-2xl font-bold text-green-600">
+            {milestones[0] ? new Date(milestones[0].date).toLocaleDateString('zh-CN') : '-'}
+          </div>
+        </div>
       </div>
 
       {/* Add/Edit Form */}
@@ -201,23 +227,6 @@ export default function Milestones() {
                   onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
                   className="input-field"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  类别
-                </label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                  className="input-field"
-                >
-                  {categories.map(category => (
-                    <option key={category.id} value={category.id}>
-                      {category.icon} {category.name}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               <div>
@@ -244,6 +253,22 @@ export default function Milestones() {
                   rows={4}
                   placeholder="详细描述这个里程碑..."
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  标签 (用逗号分隔)
+                </label>
+                <input
+                  type="text"
+                  value={formData.tags}
+                  onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
+                  className="input-field"
+                  placeholder="例: 运动发展, 翻身, 里程碑"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  常用标签: 运动发展, 语言发展, 社交发展, 认知发展, 生活自理
+                </p>
               </div>
             </div>
 
@@ -276,53 +301,60 @@ export default function Milestones() {
           </div>
         ) : (
           <div className="space-y-4">
-            {milestones.map((milestone, index) => {
-              const categoryInfo = getCategoryInfo(milestone.category)
-              return (
-                <div key={milestone.id} className="card">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-sm font-medium ${categoryInfo.color}`}>
-                          {categoryInfo.icon} {categoryInfo.name}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {new Date(milestone.date).toLocaleDateString('zh-CN')}
-                        </span>
-                        <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                          {calculateAge(milestone.date)}
-                        </span>
-                      </div>
-                      
-                      <h4 className="text-lg font-semibold text-gray-800 mb-2">
-                        {milestone.title}
-                      </h4>
-                      
-                      <p className="text-gray-600 text-sm leading-relaxed">
-                        {milestone.description}
-                      </p>
+            {milestones.map((milestone) => (
+              <div key={milestone.id} className="card">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <span className="text-sm text-gray-500">
+                        {new Date(milestone.date).toLocaleDateString('zh-CN')}
+                      </span>
+                      <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                        {calculateAge(milestone.date)}
+                      </span>
                     </div>
                     
-                    <div className="flex space-x-2 ml-4">
-                      <button
-                        onClick={() => handleEdit(milestone)}
-                        className="text-blue-600 hover:bg-blue-100 p-2 rounded transition-colors"
-                        title="编辑"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDelete(milestone.id)}
-                        className="text-red-600 hover:bg-red-100 p-2 rounded transition-colors"
-                        title="删除"
-                      >
-                        🗑️
-                      </button>
-                    </div>
+                    <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                      {milestone.title}
+                    </h4>
+                    
+                    <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                      {milestone.description}
+                    </p>
+
+                    {milestone.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {milestone.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-600"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex space-x-2 ml-4">
+                    <button
+                      onClick={() => handleEdit(milestone)}
+                      className="text-blue-600 hover:bg-blue-100 p-2 rounded transition-colors"
+                      title="编辑"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDelete(milestone.id)}
+                      className="text-red-600 hover:bg-red-100 p-2 rounded transition-colors"
+                      title="删除"
+                    >
+                      🗑️
+                    </button>
                   </div>
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
         )}
       </div>
