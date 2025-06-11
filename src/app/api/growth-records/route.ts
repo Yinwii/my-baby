@@ -30,9 +30,9 @@ export async function POST(request: NextRequest) {
       data: {
         babyId: data.babyId,
         date: new Date(data.date),
-        weight: parseFloat(data.weight),
-        height: parseFloat(data.height),
-        headCircumference: data.headCircumference ? parseFloat(data.headCircumference) : null,
+        weight: data.weight ? parseFloat(data.weight) : undefined,
+        height: data.height ? parseFloat(data.height) : undefined,
+        headCircumference: data.headCircumference ? parseFloat(data.headCircumference) : undefined,
         notes: data.notes,
       },
     })

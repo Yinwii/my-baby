@@ -7,8 +7,8 @@ import { useGrowthRecords } from '@/hooks/useGrowthRecords'
 interface GrowthEntry {
   id: string
   date: string
-  weight: number
-  height: number
+  weight?: number
+  height?: number
   headCircumference?: number
   notes?: string
 }
@@ -40,8 +40,8 @@ export default function GrowthRecord() {
   }
 
   const handleSubmit = async () => {
-    if (!formData.weight || !formData.height) {
-      alert('请填写体重和身高')
+    if (!formData.date) {
+      alert('请选择记录日期')
       return
     }
 
@@ -54,8 +54,8 @@ export default function GrowthRecord() {
       const recordData = {
         babyId: baby.id,
         date: formData.date,
-        weight: parseFloat(formData.weight),
-        height: parseFloat(formData.height),
+        weight: formData.weight ? parseFloat(formData.weight) : undefined,
+        height: formData.height ? parseFloat(formData.height) : undefined,
         headCircumference: formData.headCircumference ? parseFloat(formData.headCircumference) : undefined,
         notes: formData.notes || undefined,
       }
@@ -79,8 +79,8 @@ export default function GrowthRecord() {
     setEditingRecord(record)
     setFormData({
       date: record.date.split('T')[0],
-      weight: record.weight.toString(),
-      height: record.height.toString(),
+      weight: record.weight?.toString() || '',
+      height: record.height?.toString() || '',
       headCircumference: record.headCircumference?.toString() || '',
       notes: record.notes || ''
     })
@@ -176,9 +176,9 @@ export default function GrowthRecord() {
               <div>
                 <p className="text-sm text-gray-600">最新体重</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {records[0]?.weight} kg
+                  {records[0]?.weight ? `${records[0].weight} kg` : '未记录'}
                 </p>
-                {records[1] && (
+                {records[1] && records[0]?.weight && records[1]?.weight && (
                   <div className="flex items-center space-x-1 text-sm">
                     <span className={getGrowthTrend(records[0].weight, records[1].weight).color}>
                       {getGrowthTrend(records[0].weight, records[1].weight).icon}
@@ -200,9 +200,9 @@ export default function GrowthRecord() {
               <div>
                 <p className="text-sm text-gray-600">最新身高</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {records[0]?.height} cm
+                  {records[0]?.height ? `${records[0].height} cm` : '未记录'}
                 </p>
-                {records[1] && (
+                {records[1] && records[0]?.height && records[1]?.height && (
                   <div className="flex items-center space-x-1 text-sm">
                     <span className={getGrowthTrend(records[0].height, records[1].height).color}>
                       {getGrowthTrend(records[0].height, records[1].height).icon}
@@ -224,7 +224,7 @@ export default function GrowthRecord() {
               <div>
                 <p className="text-sm text-gray-600">最新头围</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {records[0]?.headCircumference || 0} cm
+                  {records[0]?.headCircumference ? `${records[0].headCircumference} cm` : '未记录'}
                 </p>
                 {records[1] && records[0]?.headCircumference && records[1]?.headCircumference && (
                   <div className="flex items-center space-x-1 text-sm">
@@ -253,7 +253,7 @@ export default function GrowthRecord() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  记录日期
+                  记录日期 <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -266,7 +266,7 @@ export default function GrowthRecord() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    体重 (kg)
+                    体重 (kg) <span className="text-gray-400 text-xs">可选</span>
                   </label>
                   <input
                     type="number"
@@ -280,7 +280,7 @@ export default function GrowthRecord() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    身高 (cm)
+                    身高 (cm) <span className="text-gray-400 text-xs">可选</span>
                   </label>
                   <input
                     type="number"
@@ -294,7 +294,7 @@ export default function GrowthRecord() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  头围 (cm) - 可选
+                  头围 (cm) <span className="text-gray-400 text-xs">可选</span>
                 </label>
                 <input
                   type="number"
@@ -308,7 +308,7 @@ export default function GrowthRecord() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  备注
+                  备注 <span className="text-gray-400 text-xs">可选</span>
                 </label>
                 <textarea
                   value={formData.notes}
@@ -365,15 +365,15 @@ export default function GrowthRecord() {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <span className="text-gray-600">体重:</span>
-                        <span className="font-semibold ml-1">{record.weight} kg</span>
+                        <span className="font-semibold ml-1">{record.weight ? `${record.weight} kg` : '未记录'}</span>
                       </div>
                       <div>
                         <span className="text-gray-600">身高:</span>
-                        <span className="font-semibold ml-1">{record.height} cm</span>
+                        <span className="font-semibold ml-1">{record.height ? `${record.height} cm` : '未记录'}</span>
                       </div>
                       <div>
                         <span className="text-gray-600">头围:</span>
-                        <span className="font-semibold ml-1">{record.headCircumference || '未测量'} cm</span>
+                        <span className="font-semibold ml-1">{record.headCircumference ? `${record.headCircumference} cm` : '未测量'}</span>
                       </div>
                     </div>
                     

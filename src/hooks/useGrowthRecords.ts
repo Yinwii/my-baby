@@ -4,8 +4,8 @@ interface GrowthRecord {
   id: string
   babyId: string
   date: string
-  weight: number
-  height: number
+  weight?: number
+  height?: number
   headCircumference?: number
   notes?: string
   createdAt: string

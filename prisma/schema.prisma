@@ -42,8 +42,8 @@ model GrowthRecord {
   id                  String   @id @default(cuid())
   babyId              String
   date                DateTime
-  weight              Float
-  height              Float
+  weight              Float?
+  height              Float?
   headCircumference   Float?
   notes               String?
   createdAt           DateTime @default(now())
