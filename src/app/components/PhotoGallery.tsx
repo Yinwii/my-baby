@@ -24,6 +24,15 @@ const formatDuration = (seconds: number | undefined): string | null => {
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
+// Helper function to format date to Chinese readable format
+const formatDateDisplay = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
 
 export default function PhotoGallery() { // Consider renaming to MediaGallery later if desired
   const { baby, loading, error } = useBaby()
@@ -46,8 +55,10 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     description: ''
   });
 
-  const calculateAge = (date: string) => { // This helper function remains the same
-    const birth = new Date('2024-01-01')
+  const calculateAge = (date: string) => {
+    if (!baby?.birthDate) return '未知'
+    
+    const birth = new Date(baby.birthDate)
     const recordDate = new Date(date)
     const diffTime = Math.abs(recordDate.getTime() - birth.getTime())
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
@@ -75,6 +86,16 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
           if (response.ok) {
             const items = await response.json()
             console.log('Loaded media items:', items)
+            // Log each item's URL for debugging
+            items.forEach((item: any, index: number) => {
+              console.log(`Media item ${index + 1}:`, {
+                id: item.id,
+                title: item.title,
+                mediaType: item.mediaType,
+                url: item.url,
+                thumbnailUrl: item.thumbnailUrl
+              });
+            });
             const itemsWithAge = items.map((item: any) => ({
               ...item,
               age: calculateAge(item.date)
@@ -90,7 +111,18 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     }
     
     loadMediaItems()
-  }, [baby?.id])
+  }, [baby?.id, baby?.birthDate])
+
+  // Update ages when baby birth date changes
+  useEffect(() => {
+    if (baby?.birthDate && mediaItems.length > 0) {
+      const updatedItems = mediaItems.map(item => ({
+        ...item,
+        age: calculateAge(item.date)
+      }))
+      setMediaItems(updatedItems)
+    }
+  }, [baby?.birthDate])
 
   // Renamed from handleUploadPhoto to handleUploadMediaItem
   const handleUploadMediaItem = async () => {
@@ -215,6 +247,36 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     return acc;
   }, {} as Record<string, MediaItem[]>); // Updated type
 
+  // Add delete handler for media items
+  const handleDeleteMediaItem = async (mediaItemId: string) => {
+    if (!confirm('确定要删除这个媒体文件吗？此操作无法撤销。')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/photos/${mediaItemId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remove the item from local state
+        setMediaItems(prev => prev.filter(item => item.id !== mediaItemId));
+        // Close the modal if this item was selected
+        if (selectedMediaItem?.id === mediaItemId) {
+          setSelectedMediaItem(null);
+        }
+        alert('媒体文件删除成功！');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '删除失败');
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+      const errorMessage = error instanceof Error ? error.message : '删除过程中发生未知错误';
+      alert(`删除失败: ${errorMessage}`);
+    }
+  };
+
   // Show loading state if baby is still loading
   if (loading) {
     return (
@@ -265,7 +327,9 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
         <div className="card text-center">
           <div className="text-3xl mb-2">📅</div>
           <p className="text-sm text-gray-600 mb-1">最新媒体</p>
-          <p className="text-2xl font-bold text-green-600">{mediaItems[0]?.date}</p>
+          <p className="text-2xl font-bold text-green-600">
+            {mediaItems[0]?.date ? formatDateDisplay(mediaItems[0].date) : '暂无'}
+          </p>
         </div>
 
         <div className="card text-center">
@@ -402,12 +466,21 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-gray-800">{selectedMediaItem.title}</h3>
-                <button
-                  onClick={() => setSelectedMediaItem(null)} // Renamed state setter
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
-                >
-                  ×
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleDeleteMediaItem(selectedMediaItem.id)}
+                    className="text-red-500 hover:text-red-700 text-sm px-3 py-1 border border-red-300 rounded hover:bg-red-50 transition-colors"
+                    title="删除媒体文件"
+                  >
+                    🗑️ 删除
+                  </button>
+                  <button
+                    onClick={() => setSelectedMediaItem(null)} // Renamed state setter
+                    className="text-gray-500 hover:text-gray-700 text-2xl"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
               
               <div className="aspect-video bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
@@ -416,6 +489,16 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
                     src={selectedMediaItem.url}
                     alt={selectedMediaItem.title}
                     className="max-w-full max-h-full object-contain"
+                    onError={(e) => {
+                      console.error('Modal image failed to load:', selectedMediaItem.url);
+                      console.error('Modal image error event:', e);
+                      // Show a placeholder or error state
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                    onLoad={() => {
+                      console.log('Modal image loaded successfully:', selectedMediaItem.url);
+                    }}
                   />
                 ) : selectedMediaItem.mediaType === 'VIDEO' ? (
                   <video
@@ -433,6 +516,20 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
                     <p className="text-sm text-gray-500">{selectedMediaItem.url}</p>
                   </div>
                 )}
+                {/* Error fallback for modal images */}
+                <div className="hidden w-full h-full flex items-center justify-center bg-red-50">
+                  <div className="text-center">
+                    <div className="text-4xl mb-2">⚠️</div>
+                    <p className="text-red-600 mb-2">图片加载失败</p>
+                    <p className="text-sm text-gray-500 break-all px-4">{selectedMediaItem.url}</p>
+                    <button
+                      onClick={() => window.open(selectedMediaItem.url, '_blank')}
+                      className="mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
+                    >
+                      尝试在新窗口打开
+                    </button>
+                  </div>
+                </div>
               </div>
               
               <div className="space-y-2">
@@ -480,6 +577,16 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
                         src={item.url}
                         alt={item.title}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error('Image failed to load:', item.url);
+                          console.error('Image error event:', e);
+                          // Show a placeholder or error state
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }}
+                        onLoad={() => {
+                          console.log('Image loaded successfully:', item.url);
+                        }}
                       />
                     ) : item.mediaType === 'VIDEO' ? (
                       <>
@@ -487,6 +594,10 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
                           src={item.thumbnailUrl || '/placeholder-video-thumb.jpg'} // Fallback thumbnail
                           alt={item.title + " thumbnail"}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error('Video thumbnail failed to load:', item.thumbnailUrl);
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 group-hover:bg-opacity-10 transition-opacity">
                           <svg className="w-12 h-12 text-white opacity-80" fill="currentColor" viewBox="0 0 20 20">
@@ -507,6 +618,14 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
                         </div>
                       </div>
                     )}
+                    {/* Error fallback for images */}
+                    <div className="hidden w-full h-full flex items-center justify-center bg-red-50">
+                      <div className="text-center">
+                        <div className="text-2xl mb-2">⚠️</div>
+                        <p className="text-xs text-red-600 px-2">图片加载失败</p>
+                        <p className="text-xs text-gray-500 px-2 mt-1">{item.title}</p>
+                      </div>
+                    </div>
                   </div>
                   
                   <div className="mt-2">
