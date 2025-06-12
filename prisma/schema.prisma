@@ -32,7 +32,7 @@ model Baby {
   // Relations
   growthRecords   GrowthRecord[]
   milestones      Milestone[]
-  photos          Photo[]
+  mediaItems      MediaItem[] // Changed from photos Photo[]
 
   @@map("babies")
 }
@@ -72,19 +72,23 @@ model Milestone {
   @@index([babyId, date])
 }
 
-model Photo {
+model MediaItem {
   id          String   @id @default(cuid())
   babyId      String
   date        DateTime
   title       String
   description String?
-  url         String
+  url         String    // URL of the web-friendly (converted) media
+  mediaType   String    // "IMAGE" or "VIDEO"
+  format      String?   // e.g., HEIC, JPEG, MOV, MP4
+  thumbnailUrl String?  // Optional: for video thumbnails
+  duration     Int?     // Optional: for video duration in seconds
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
   baby        Baby     @relation(fields: [babyId], references: [id], onDelete: Cascade)
 
-  @@map("photos")
+  @@map("media_items") // Changed from "photos"
   @@index([babyId, date])
 }

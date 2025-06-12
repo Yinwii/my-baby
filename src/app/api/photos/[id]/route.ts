@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const photo = await prisma.photo.findUnique({
+    const mediaItem = await prisma.mediaItem.findUnique({ // Changed from prisma.photo.findUnique
       where: { id },
       include: {
         baby: {
@@ -18,14 +18,14 @@ export async function GET(
       },
     })
 
-    if (!photo) {
-      return NextResponse.json({ error: 'Photo not found' }, { status: 404 })
+    if (!mediaItem) { // Changed from photo
+      return NextResponse.json({ error: 'Media item not found' }, { status: 404 }) // Changed from Photo
     }
 
-    return NextResponse.json(photo)
+    return NextResponse.json(mediaItem) // Changed from photo
   } catch (error) {
-    console.error('Error fetching photo:', error)
-    return NextResponse.json({ error: 'Failed to fetch photo' }, { status: 500 })
+    console.error('Error fetching media item:', error) // Changed from photo
+    return NextResponse.json({ error: 'Failed to fetch media item' }, { status: 500 }) // Changed from photo
   }
 }
 
@@ -37,20 +37,26 @@ export async function PUT(
     const { id } = await params
     const data = await request.json()
     
-    const photo = await prisma.photo.update({
+    const mediaItem = await prisma.mediaItem.update({ // Changed from prisma.photo.update
       where: { id },
       data: {
         date: data.date ? new Date(data.date) : undefined,
         title: data.title,
         description: data.description,
         url: data.url,
+        // Include new fields, making them updatable if provided
+        mediaType: data.mediaType,
+        format: data.format,
+        originalFormat: data.originalFormat,
+        thumbnailUrl: data.thumbnailUrl,
+        duration: data.duration,
       },
     })
 
-    return NextResponse.json(photo)
+    return NextResponse.json(mediaItem) // Changed from photo
   } catch (error) {
-    console.error('Error updating photo:', error)
-    return NextResponse.json({ error: 'Failed to update photo' }, { status: 500 })
+    console.error('Error updating media item:', error) // Changed from photo
+    return NextResponse.json({ error: 'Failed to update media item' }, { status: 500 }) // Changed from photo
   }
 }
 
@@ -60,13 +66,13 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    await prisma.photo.delete({
+    await prisma.mediaItem.delete({ // Changed from prisma.photo.delete
       where: { id },
     })
 
-    return NextResponse.json({ message: 'Photo deleted successfully' })
+    return NextResponse.json({ message: 'Media item deleted successfully' }) // Changed from Photo
   } catch (error) {
-    console.error('Error deleting photo:', error)
-    return NextResponse.json({ error: 'Failed to delete photo' }, { status: 500 })
+    console.error('Error deleting media item:', error) // Changed from photo
+    return NextResponse.json({ error: 'Failed to delete media item' }, { status: 500 }) // Changed from photo
   }
 } 

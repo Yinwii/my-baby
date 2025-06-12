@@ -10,15 +10,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Baby ID is required' }, { status: 400 })
     }
 
-    const photos = await prisma.photo.findMany({
+    const mediaItems = await prisma.mediaItem.findMany({ // Changed from prisma.photo.findMany
       where: { babyId },
       orderBy: { date: 'desc' },
     })
 
-    return NextResponse.json(photos)
+    return NextResponse.json(mediaItems) // Changed from photos
   } catch (error) {
-    console.error('Error fetching photos:', error)
-    return NextResponse.json({ error: 'Failed to fetch photos' }, { status: 500 })
+    console.error('Error fetching media items:', error) // Changed from photos
+    return NextResponse.json({ error: 'Failed to fetch media items' }, { status: 500 }) // Changed from photos
   }
 }
 
@@ -26,19 +26,24 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     
-    const photo = await prisma.photo.create({
+    const mediaItem = await prisma.mediaItem.create({ // Changed from prisma.photo.create
       data: {
         babyId: data.babyId,
         date: new Date(data.date),
         title: data.title,
         description: data.description,
-        url: data.url,
+        url: data.url, // URL of the main media (image or video)
+        mediaType: data.mediaType, // "IMAGE" or "VIDEO"
+        format: data.format, // e.g., "jpeg", "mp4"
+        originalFormat: data.originalFormat, // e.g., "heic", "mov"
+        thumbnailUrl: data.thumbnailUrl, // URL of video thumbnail
+        duration: data.duration, // Video duration in seconds
       },
     })
 
-    return NextResponse.json(photo, { status: 201 })
+    return NextResponse.json(mediaItem, { status: 201 }) // Changed from photo
   } catch (error) {
-    console.error('Error creating photo:', error)
-    return NextResponse.json({ error: 'Failed to create photo' }, { status: 500 })
+    console.error('Error creating media item:', error) // Changed from photo
+    return NextResponse.json({ error: 'Failed to create media item' }, { status: 500 }) // Changed from photo
   }
 } 
