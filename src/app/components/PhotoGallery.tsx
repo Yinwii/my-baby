@@ -216,6 +216,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
           <p className="text-sm text-gray-600 mb-1">记录时长</p>
           <p className="text-2xl font-bold text-purple-600">
             {Object.keys(groupedMediaItems).length} 个月
+          </p>
         </div>
       </div>
 
