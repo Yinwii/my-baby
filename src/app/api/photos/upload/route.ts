@@ -186,11 +186,11 @@ export async function POST(request: NextRequest) {
         console.log(`Getting video duration for ${finalFileName}...`);
         const probeData = await getFFprobeData(outputMp4Path);
         if (probeData.format && probeData.format.duration) {
-          videoDuration = parseFloat(probeData.format.duration);
+          videoDuration = Math.round(parseFloat(probeData.format.duration));
         } else if (probeData.streams && probeData.streams.length > 0) {
           const videoStream = probeData.streams.find((s: any) => s.codec_type === 'video');
           if (videoStream && videoStream.duration) {
-            videoDuration = parseFloat(videoStream.duration);
+            videoDuration = Math.round(parseFloat(videoStream.duration));
           }
         }
         console.log(`Video duration: ${videoDuration}s`);

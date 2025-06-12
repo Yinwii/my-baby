@@ -5,21 +5,25 @@ export async function GET() {
   try {
     // For now, we'll get the first baby (single baby app)
     // In a multi-user app, you'd filter by user ID
+    console.log('Fetching baby data...')
     const baby = await prisma.baby.findFirst({
       include: {
         _count: {
           select: {
             growthRecords: true,
             milestones: true,
-            photos: true,
+            mediaItems: true,
           },
         },
       },
     })
 
+    console.log('Baby data found:', baby)
     return NextResponse.json(baby)
   } catch (error) {
     console.error('Error fetching baby:', error)
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json({ error: 'Failed to fetch baby data' }, { status: 500 })
   }
 }

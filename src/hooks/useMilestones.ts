@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface Milestone {
   id: string
@@ -16,7 +16,7 @@ export function useMilestones(babyId?: string) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchMilestones = async () => {
+  const fetchMilestones = useCallback(async () => {
     if (!babyId) return
     
     try {
@@ -32,7 +32,7 @@ export function useMilestones(babyId?: string) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [babyId])
 
   const createMilestone = async (milestoneData: Omit<Milestone, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
@@ -108,7 +108,7 @@ export function useMilestones(babyId?: string) {
     if (babyId) {
       fetchMilestones()
     }
-  }, [babyId])
+  }, [babyId, fetchMilestones])
 
   return {
     milestones,

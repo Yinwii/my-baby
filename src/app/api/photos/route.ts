@@ -25,25 +25,46 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
+    console.log('Received data for media item creation:', data)
     
+    // Validate required fields
+    if (!data.babyId) {
+      console.error('Missing babyId')
+      return NextResponse.json({ error: 'Baby ID is required' }, { status: 400 })
+    }
+    if (!data.title) {
+      console.error('Missing title')
+      return NextResponse.json({ error: 'Title is required' }, { status: 400 })
+    }
+    if (!data.url) {
+      console.error('Missing url')
+      return NextResponse.json({ error: 'URL is required' }, { status: 400 })
+    }
+    if (!data.mediaType) {
+      console.error('Missing mediaType')
+      return NextResponse.json({ error: 'Media type is required' }, { status: 400 })
+    }
+
     const mediaItem = await prisma.mediaItem.create({ // Changed from prisma.photo.create
       data: {
         babyId: data.babyId,
         date: new Date(data.date),
         title: data.title,
-        description: data.description,
+        description: data.description || null,
         url: data.url, // URL of the main media (image or video)
         mediaType: data.mediaType, // "IMAGE" or "VIDEO"
-        format: data.format, // e.g., "jpeg", "mp4"
-        originalFormat: data.originalFormat, // e.g., "heic", "mov"
-        thumbnailUrl: data.thumbnailUrl, // URL of video thumbnail
-        duration: data.duration, // Video duration in seconds
+        format: data.format || null, // e.g., "jpeg", "mp4"
+        thumbnailUrl: data.thumbnailUrl || null, // URL of video thumbnail
+        duration: data.duration ? Math.round(data.duration) : null, // Video duration in seconds, ensure integer
       },
     })
 
+    console.log('Successfully created media item:', mediaItem)
     return NextResponse.json(mediaItem, { status: 201 }) // Changed from photo
   } catch (error) {
     console.error('Error creating media item:', error) // Changed from photo
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json({ error: 'Failed to create media item' }, { status: 500 }) // Changed from photo
   }
 } 

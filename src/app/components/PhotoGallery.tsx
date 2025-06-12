@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useBaby } from '@/hooks/useBaby'
 
 interface MediaItem { // Renamed from Photo
   id: string;
@@ -11,7 +12,6 @@ interface MediaItem { // Renamed from Photo
   age: string; // This is client-calculated, will keep for now
   mediaType: 'IMAGE' | 'VIDEO'; // Added
   format?: string; // e.g., "jpeg", "mp4" - Added
-  originalFormat?: string; // e.g., "heic", "mov" - Added
   thumbnailUrl?: string; // URL of video thumbnail - Added
   duration?: number; // Video duration in seconds - Added
 }
@@ -26,39 +26,14 @@ const formatDuration = (seconds: number | undefined): string | null => {
 
 
 export default function PhotoGallery() { // Consider renaming to MediaGallery later if desired
-  const [mediaItems, setMediaItems] = useState<MediaItem[]>([ // Renamed from photos, updated type
-    // Updated initial data to include mediaType and other relevant fields
-    {
-      id: '1', url: '/placeholder-baby1.jpg', date: '2024-11-15', title: '第一次翻身',
-      description: '宝宝成功翻身的珍贵时刻', age: '10个月15天', mediaType: 'IMAGE',
-      format: 'jpg', originalFormat: 'jpg'
-    },
-    {
-      id: '2', url: '/placeholder-baby2.jpg', date: '2024-11-10', title: '甜美笑容',
-      description: '听到爸爸说话时的开心表情', age: '10个月10天', mediaType: 'IMAGE',
-      format: 'jpg', originalFormat: 'jpg'
-    },
-    {
-      id: '3', url: '/placeholder-baby3.jpg', date: '2024-11-05', title: '玩玩具',
-      description: '专注地玩摇铃玩具', age: '10个月5天', mediaType: 'IMAGE',
-      format: 'jpg', originalFormat: 'jpg'
-    },
-    {
-      id: '4', url: '/placeholder-baby4.jpg', date: '2024-10-20', title: '睡觉时光',
-      description: '安静睡觉的可爱模样', age: '9个月20天', mediaType: 'IMAGE',
-      format: 'jpg', originalFormat: 'jpg'
-    },
-    {
-      id: '5', url: '/placeholder-baby5.jpg', date: '2024-10-15', title: '洗澡时间',
-      description: '洗澡时开心玩水', age: '9个月15天', mediaType: 'IMAGE',
-      format: 'jpg', originalFormat: 'jpg'
-    },
-    {
-      id: '6', url: '/placeholder-baby6.jpg', date: '2024-10-01', title: '第一次尝试辅食',
-      description: '尝试胡萝卜泥的表情', age: '9个月1天', mediaType: 'IMAGE',
-      format: 'jpg', originalFormat: 'jpg'
-    }
-  ]);
+  const { baby, loading, error } = useBaby()
+  
+  // Debug logging
+  console.log('PhotoGallery - baby:', baby)
+  console.log('PhotoGallery - loading:', loading)
+  console.log('PhotoGallery - error:', error)
+  
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]) // Renamed from photos, updated type
 
   const [selectedMediaItem, setSelectedMediaItem] = useState<MediaItem | null>(null); // Renamed from selectedPhoto
   const [showUploadForm, setShowUploadForm] = useState(false);
@@ -90,16 +65,60 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     }
   }
 
+  // Add useEffect to load existing media items
+  useEffect(() => {
+    const loadMediaItems = async () => {
+      if (baby?.id) {
+        try {
+          console.log('Loading media items for baby:', baby.id)
+          const response = await fetch(`/api/photos?babyId=${baby.id}`)
+          if (response.ok) {
+            const items = await response.json()
+            console.log('Loaded media items:', items)
+            const itemsWithAge = items.map((item: any) => ({
+              ...item,
+              age: calculateAge(item.date)
+            }))
+            setMediaItems(itemsWithAge)
+          } else {
+            console.error('Failed to load media items:', response.status)
+          }
+        } catch (error) {
+          console.error('Error loading media items:', error)
+        }
+      }
+    }
+    
+    loadMediaItems()
+  }, [baby?.id])
+
   // Renamed from handleUploadPhoto to handleUploadMediaItem
   const handleUploadMediaItem = async () => {
+    console.log('Starting upload process...')
+    console.log('Baby:', baby)
+    console.log('Selected file:', selectedFile)
+    console.log('Form data:', newMediaItemData)
+
     if (!selectedFile) {
-      alert('请选择一个文件进行上传。'); // Updated message
-      setUploadError('请选择一个文件进行上传。');
+      const error = '请选择一个文件进行上传。'
+      console.error('Validation error:', error)
+      alert(error)
+      setUploadError(error)
       return;
     }
-    if (!newMediaItemData.title) { // Updated state name
-      alert('请填写标题。'); // Updated message
-      setUploadError('请填写标题。');
+    if (!newMediaItemData.title) {
+      const error = '请填写标题。'
+      console.error('Validation error:', error)
+      alert(error)
+      setUploadError(error)
+      return;
+    }
+
+    if (!baby?.id) {
+      const error = '请先创建宝宝信息。'
+      console.error('Validation error:', error)
+      alert(error)
+      setUploadError(error)
       return;
     }
 
@@ -107,6 +126,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     setUploadError(null);
 
     try {
+      console.log('Step 1: Uploading file to R2...')
       // 1. Upload file to R2 via /api/photos/upload endpoint
       const formData = new FormData();
       formData.append('file', selectedFile);
@@ -116,27 +136,34 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
         body: formData,
       });
 
+      console.log('Upload response status:', uploadResponse.status)
+      console.log('Upload response ok:', uploadResponse.ok)
+
       if (!uploadResponse.ok) {
         const errorData = await uploadResponse.json();
+        console.error('Upload error data:', errorData)
         throw new Error(errorData.error || `上传文件失败 (HTTP ${uploadResponse.status})`); // Updated message
       }
 
-      // uploadResult now contains: { url, mediaType, format, originalFormat, thumbnailUrl, duration }
+      // uploadResult now contains: { url, mediaType, format, thumbnailUrl, duration }
       const uploadResult = await uploadResponse.json();
+      console.log('Upload result:', uploadResult)
 
+      console.log('Step 2: Saving to database...')
       // 2. Save media item metadata (including R2 URL and other details) to database via /api/photos
       const mediaDataForDb = {
-        babyId: "TODO_REPLACE_WITH_ACTUAL_BABY_ID", // Placeholder for babyId
+        babyId: baby.id, // Use actual baby ID
         date: newMediaItemData.date, // Updated state name
         title: newMediaItemData.title, // Updated state name
-        description: newMediaItemData.description, // Updated state name
+        description: newMediaItemData.description || null, // Updated state name
         url: uploadResult.url,
         mediaType: uploadResult.mediaType,
         format: uploadResult.format,
-        originalFormat: uploadResult.originalFormat,
         thumbnailUrl: uploadResult.thumbnailUrl,
         duration: uploadResult.duration,
       };
+
+      console.log('Data to save to DB:', mediaDataForDb)
 
       const saveMediaResponse = await fetch('/api/photos', { // Endpoint remains the same
         method: 'POST',
@@ -144,13 +171,18 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
         body: JSON.stringify(mediaDataForDb),
       });
 
+      console.log('Save response status:', saveMediaResponse.status)
+      console.log('Save response ok:', saveMediaResponse.ok)
+
       if (!saveMediaResponse.ok) {
         const errorData = await saveMediaResponse.json();
+        console.error('Save error data:', errorData)
         throw new Error(errorData.error || `保存媒体信息失败 (HTTP ${saveMediaResponse.status})`); // Updated message
       }
 
       // savedMediaItem will include all fields, including id, createdAt, updatedAt from the DB
       const savedMediaItemWithId = await saveMediaResponse.json();
+      console.log('Saved media item:', savedMediaItemWithId)
 
       // Update UI
       const finalMediaItemObject: MediaItem = { // Ensure type is MediaItem
@@ -166,8 +198,9 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
       alert('文件上传成功！'); // Updated message
 
     } catch (error) {
-      console.error('上传失败:', error);
+      console.error('Upload failed:', error);
       const errorMessage = error instanceof Error ? error.message : '发生未知错误。';
+      console.error('Error message:', errorMessage)
       setUploadError(errorMessage);
     } finally {
       setIsUploading(false);
@@ -181,6 +214,30 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     acc[month].push(item);
     return acc;
   }, {} as Record<string, MediaItem[]>); // Updated type
+
+  // Show loading state if baby is still loading
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">加载中...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state if there's an error loading baby data
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="text-center py-12">
+          <div className="text-red-500 text-xl mb-4">❌</div>
+          <p className="text-red-600">加载失败: {error}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -389,7 +446,6 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
                 <p className="text-gray-700">{selectedMediaItem.description}</p>
                 <div className="text-xs text-gray-500">
                   {selectedMediaItem.format && <span>Format: {selectedMediaItem.format}</span>}
-                  {selectedMediaItem.originalFormat && <span> (Original: {selectedMediaItem.originalFormat})</span>}
                 </div>
               </div>
             </div>

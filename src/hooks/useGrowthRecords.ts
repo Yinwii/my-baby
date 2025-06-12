@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface GrowthRecord {
   id: string
@@ -17,7 +17,7 @@ export function useGrowthRecords(babyId?: string) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchRecords = async () => {
+  const fetchRecords = useCallback(async () => {
     if (!babyId) return
     
     try {
@@ -33,7 +33,7 @@ export function useGrowthRecords(babyId?: string) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [babyId])
 
   const createRecord = async (recordData: Omit<GrowthRecord, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
@@ -109,7 +109,7 @@ export function useGrowthRecords(babyId?: string) {
     if (babyId) {
       fetchRecords()
     }
-  }, [babyId])
+  }, [babyId, fetchRecords])
 
   return {
     records,

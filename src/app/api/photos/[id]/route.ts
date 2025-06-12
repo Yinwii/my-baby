@@ -47,7 +47,6 @@ export async function PUT(
         // Include new fields, making them updatable if provided
         mediaType: data.mediaType,
         format: data.format,
-        originalFormat: data.originalFormat,
         thumbnailUrl: data.thumbnailUrl,
         duration: data.duration,
       },
