@@ -198,57 +198,71 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           </div>
 
           {/* 右下角：成长记录图表 */}
-          <div className="card p-6 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 min-h-[400px] flex flex-col">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-              <span className="mr-2">📈</span>
+          <div className="card p-6 bg-gradient-to-br from-emerald-50 via-cyan-50 to-teal-50 border-2 border-emerald-300 min-h-[400px] flex flex-col shadow-lg">
+            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+              <span className="mr-3 text-2xl">📈</span>
               成长趋势图表
             </h3>
             {chartData.length > 0 ? (
-              <>
-                <div className="h-72 bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-white/50">
+              <div className="flex-1">
+                <div className="h-80 bg-white/80 backdrop-blur-sm rounded-xl p-4 border-2 border-white/60 shadow-inner">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#34d399" opacity={0.3} />
                       <XAxis 
                         dataKey="date" 
-                        tick={{ fontSize: 12, fill: '#6b7280' }}
-                        stroke="#9ca3af"
+                        tick={{ fontSize: 12, fill: '#374151', fontWeight: '500' }}
+                        stroke="#6b7280"
+                        strokeWidth={2}
                       />
                       <YAxis 
                         yAxisId="weight"
                         orientation="left"
-                        tick={{ fontSize: 12, fill: '#6b7280' }}
-                        stroke="#9ca3af"
-                        label={{ value: '体重(kg)', angle: -90, position: 'insideLeft', style: { fontSize: '12px', fill: '#6b7280' } }}
+                        tick={{ fontSize: 12, fill: '#374151', fontWeight: '500' }}
+                        stroke="#0891b2"
+                        strokeWidth={2}
+                        label={{ value: '体重(kg)', angle: -90, position: 'insideLeft', style: { fontSize: '13px', fill: '#0891b2', fontWeight: 'bold' } }}
                       />
                       <YAxis 
                         yAxisId="height"
                         orientation="right"
-                        tick={{ fontSize: 12, fill: '#6b7280' }}
-                        stroke="#9ca3af"
-                        label={{ value: '身高(cm)', angle: 90, position: 'insideRight', style: { fontSize: '12px', fill: '#6b7280' } }}
+                        tick={{ fontSize: 12, fill: '#374151', fontWeight: '500' }}
+                        stroke="#059669"
+                        strokeWidth={2}
+                        label={{ value: '身高(cm)', angle: 90, position: 'insideRight', style: { fontSize: '13px', fill: '#059669', fontWeight: 'bold' } }}
                       />
                       <Tooltip 
-                        labelFormatter={(label) => `日期: ${label}`}
+                        labelFormatter={(label) => `📅 日期: ${label}`}
                         formatter={(value: any, name: string) => [
                           value ? `${value} ${name === '体重' ? 'kg' : 'cm'}` : '无数据',
-                          name
+                          name === '体重' ? '⚖️ 体重' : '📏 身高'
                         ]}
                         contentStyle={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '8px',
-                          fontSize: '14px'
+                          backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                          border: '2px solid #10b981',
+                          borderRadius: '12px',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          boxShadow: '0 10px 25px rgba(16, 185, 129, 0.2)'
                         }}
+                        labelStyle={{ color: '#374151', fontWeight: 'bold' }}
                       />
-                      <Legend wrapperStyle={{ fontSize: '14px' }} />
+                      <Legend 
+                        wrapperStyle={{ 
+                          fontSize: '14px', 
+                          fontWeight: '600',
+                          paddingTop: '10px'
+                        }} 
+                        iconType="rect"
+                      />
                       <Line
                         yAxisId="weight"
                         type="monotone"
                         dataKey="体重"
                         stroke="#0891b2"
-                        strokeWidth={3}
-                        dot={{ fill: '#0891b2', strokeWidth: 2, r: 5 }}
+                        strokeWidth={4}
+                        dot={{ fill: '#0891b2', strokeWidth: 3, r: 6, stroke: '#ffffff' }}
+                        activeDot={{ r: 8, fill: '#0891b2', stroke: '#ffffff', strokeWidth: 3 }}
                         connectNulls={false}
                       />
                       <Line
@@ -256,38 +270,44 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                         type="monotone"
                         dataKey="身高"
                         stroke="#059669"
-                        strokeWidth={3}
-                        dot={{ fill: '#059669', strokeWidth: 2, r: 5 }}
+                        strokeWidth={4}
+                        dot={{ fill: '#059669', strokeWidth: 3, r: 6, stroke: '#ffffff' }}
+                        activeDot={{ r: 8, fill: '#059669', stroke: '#ffffff', strokeWidth: 3 }}
                         connectNulls={false}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="mt-4 flex justify-center">
-                  <button 
-                    onClick={() => setActiveTab('growth')}
-                    className="btn-primary bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 border-0 px-6 py-3"
-                  >
-                    查看详细记录
-                  </button>
+                {/* 添加一些统计信息 */}
+                <div className="mt-6 grid grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-r from-blue-100 to-cyan-100 rounded-lg p-3 border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-blue-800">记录天数</span>
+                      <span className="text-lg font-bold text-blue-600">{chartData.length} 天</span>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg p-3 border border-green-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-green-800">最新记录</span>
+                      <span className="text-lg font-bold text-green-600">
+                        {new Date(chartData[chartData.length - 1]?.fullDate).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </>
+              </div>
             ) : (
-              <>
-                <div className="flex-1 text-center py-12 bg-white/70 backdrop-blur-sm rounded-lg border border-white/50 flex flex-col justify-center">
-                  <span className="text-4xl mb-4 block">📊</span>
+              <div className="flex-1 flex flex-col justify-center">
+                <div className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-white/60 shadow-inner">
+                  <div className="mb-6">
+                    <span className="text-6xl block mb-2">📊</span>
+                    <div className="w-16 h-1 bg-gradient-to-r from-emerald-400 to-teal-400 rounded mx-auto"></div>
+                  </div>
+                  <h4 className="text-lg font-bold text-gray-800 mb-3">开始记录成长数据</h4>
                   <p className="text-gray-600 text-base mb-2">还没有成长记录</p>
-                  <p className="text-sm text-gray-500 mb-4">添加至少2条记录查看趋势</p>
+                  <p className="text-sm text-gray-500">添加至少2条记录即可查看美丽的成长趋势图</p>
                 </div>
-                <div className="mt-4 flex justify-center">
-                  <button 
-                    onClick={() => setActiveTab('growth')}
-                    className="btn-primary bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 border-0 px-6 py-3"
-                  >
-                    添加成长记录
-                  </button>
-                </div>
-              </>
+              </div>
             )}
           </div>
         </div>
