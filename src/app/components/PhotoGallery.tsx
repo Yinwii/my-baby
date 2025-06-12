@@ -65,6 +65,9 @@ export default function PhotoGallery() {
 
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
   const [showUploadForm, setShowUploadForm] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [newPhoto, setNewPhoto] = useState({
     date: new Date().toISOString().split('T')[0],
     title: '',
@@ -90,30 +93,86 @@ export default function PhotoGallery() {
     }
   }
 
-  const handleUploadPhoto = () => {
+  const handleUploadPhoto = async () => {
+    if (!selectedFile) {
+      alert('请选择一张照片进行上传。');
+      setUploadError('请选择一张照片进行上传。');
+      return;
+    }
     if (!newPhoto.title) {
-      alert('请填写照片标题')
-      return
+      alert('请填写照片标题。');
+      setUploadError('请填写照片标题。');
+      return;
     }
 
-    const photo: Photo = {
-      id: Date.now().toString(),
-      url: '/placeholder-baby-new.jpg', // In a real app, this would be the uploaded file URL
-      date: newPhoto.date,
-      title: newPhoto.title,
-      description: newPhoto.description,
-      age: calculateAge(newPhoto.date)
-    }
+    setIsUploading(true);
+    setUploadError(null);
 
-    setPhotos(prev => [photo, ...prev])
-    setNewPhoto({
-      date: new Date().toISOString().split('T')[0],
-      title: '',
-      description: ''
-    })
-    setShowUploadForm(false)
-    alert('照片已上传！')
-  }
+    try {
+      // 1. Upload image to R2 via our new endpoint
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const uploadResponse = await fetch('/api/photos/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        throw new Error(errorData.error || `上传照片失败 (HTTP ${uploadResponse.status})`);
+      }
+
+      const uploadResult = await uploadResponse.json();
+      const r2Url = uploadResult.url;
+
+      // 2. Save photo metadata (including R2 URL) to database via existing endpoint
+      const photoDataForDb = {
+        babyId: "TODO_REPLACE_WITH_ACTUAL_BABY_ID", // Placeholder for babyId
+        date: newPhoto.date,
+        title: newPhoto.title,
+        description: newPhoto.description,
+        url: r2Url,
+        // Assuming 'age' will be calculated by the backend or we'll add it before setting state
+      };
+
+      const savePhotoResponse = await fetch('/api/photos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(photoDataForDb),
+      });
+
+      if (!savePhotoResponse.ok) {
+        const errorData = await savePhotoResponse.json();
+        throw new Error(errorData.error || `保存照片信息失败 (HTTP ${savePhotoResponse.status})`);
+      }
+
+      const savedPhotoWithId = await savePhotoResponse.json(); // API should return the full photo object with ID
+
+      // Update UI
+      // Ensure the savedPhoto object from API has all necessary fields, or augment it here.
+      // For example, if 'age' is not returned by API, calculate it:
+      const finalPhotoObject = {
+        ...savedPhotoWithId,
+        age: calculateAge(savedPhotoWithId.date) // calculateAge is already defined in this component
+      };
+
+      setPhotos(prev => [finalPhotoObject, ...prev]);
+
+      setNewPhoto({ date: new Date().toISOString().split('T')[0], title: '', description: '' });
+      setSelectedFile(null);
+      setShowUploadForm(false);
+      alert('照片上传成功！');
+
+    } catch (error) {
+      console.error('上传失败:', error);
+      const errorMessage = error instanceof Error ? error.message : '发生未知错误。';
+      setUploadError(errorMessage);
+      // alert(`错误: ${errorMessage}`); // Alerting can be redundant if error is shown in form
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const groupedPhotos = photos.reduce((acc, photo) => {
     const month = photo.date.substring(0, 7)
@@ -165,27 +224,50 @@ export default function PhotoGallery() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-800 mb-4">上传新照片</h3>
-            
+            {uploadError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong className="font-bold">发生错误: </strong>
+                <span className="block sm:inline">{uploadError}</span>
+              </div>
+            )}
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   选择照片
                 </label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <div className="text-4xl mb-2">📷</div>
-                  <p className="text-gray-600 mb-2">点击选择照片或拖拽到这里</p>
                   <input
                     type="file"
                     accept="image/*"
                     className="hidden"
                     id="photo-upload"
+                    onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)}
+                    disabled={isUploading}
                   />
-                  <label
-                    htmlFor="photo-upload"
-                    className="btn-secondary cursor-pointer inline-block"
-                  >
-                    选择文件
-                  </label>
+                  {!selectedFile ? (
+                    <>
+                      <div className="text-4xl mb-2">📷</div>
+                      <p className="text-gray-600 mb-2">点击选择照片或拖拽到这里</p>
+                      <label
+                        htmlFor="photo-upload"
+                        className={`btn-secondary cursor-pointer inline-block ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        选择文件
+                      </label>
+                    </>
+                  ) : (
+                    <div className="text-left">
+                      <p className="text-sm text-gray-700">已选择文件:</p>
+                      <p className="font-medium text-gray-900 truncate">{selectedFile.name}</p>
+                      <button
+                        onClick={() => setSelectedFile(null)}
+                        className="text-xs text-red-500 hover:text-red-700 mt-1"
+                        disabled={isUploading}
+                      >
+                        清除选择
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -232,12 +314,19 @@ export default function PhotoGallery() {
               <button
                 onClick={handleUploadPhoto}
                 className="btn-primary flex-1"
+                disabled={isUploading}
               >
-                上传照片
+                {isUploading ? '上传中...' : '上传照片'}
               </button>
               <button
-                onClick={() => setShowUploadForm(false)}
-                className="btn-secondary flex-1"
+                onClick={() => {
+                  if (isUploading) return; // Prevent closing modal while uploading
+                  setShowUploadForm(false);
+                  setUploadError(null); // Clear error when closing
+                  setSelectedFile(null); // Clear selected file
+                }}
+                className={`btn-secondary flex-1 ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isUploading}
               >
                 取消
               </button>
