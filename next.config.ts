@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: '*20250530.com',
+        hostname: '*.20250530.space',
         port: '',
         pathname: '/**',
       }
