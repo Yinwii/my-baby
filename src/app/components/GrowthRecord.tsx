@@ -349,7 +349,7 @@ export default function GrowthRecord() {
           </div>
         ) : (
           <div className="space-y-3">
-            {records.map((record, index) => (
+            {records.map((record) => (
               <div key={record.id} className="card">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">

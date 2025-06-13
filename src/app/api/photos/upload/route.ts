@@ -50,7 +50,10 @@ async function runFFmpeg(args: string[]): Promise<void> {
 }
 
 // Helper function to get FFprobe data
-async function getFFprobeData(filePath: string): Promise<any> {
+async function getFFprobeData(filePath: string): Promise<{
+  format?: { duration?: string };
+  streams?: Array<{ codec_type?: string; duration?: string }>;
+}> {
   return new Promise((resolve, reject) => {
     const ffprobePath = process.env.FFPROBE_PATH || 'ffprobe'; // Allow overriding ffprobe path
     const args = [
@@ -69,7 +72,7 @@ async function getFFprobeData(filePath: string): Promise<any> {
       if (code === 0) {
         try {
           resolve(JSON.parse(output));
-        } catch (e) {
+        } catch {
           console.error('Failed to parse ffprobe output:', output);
           reject(new Error('Failed to parse ffprobe output.'));
         }
@@ -188,7 +191,7 @@ export async function POST(request: NextRequest) {
         if (probeData.format && probeData.format.duration) {
           videoDuration = Math.round(parseFloat(probeData.format.duration));
         } else if (probeData.streams && probeData.streams.length > 0) {
-          const videoStream = probeData.streams.find((s: any) => s.codec_type === 'video');
+          const videoStream = probeData.streams.find((s: { codec_type?: string; duration?: string }) => s.codec_type === 'video');
           if (videoStream && videoStream.duration) {
             videoDuration = Math.round(parseFloat(videoStream.duration));
           }
@@ -234,7 +237,7 @@ export async function POST(request: NextRequest) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred during upload.';
     // Check for specific error types if needed
     // SdkError includes a $metadata property with httpStatusCode
-    const statusCode = (error as any)?.$metadata?.httpStatusCode || 500;
+    const statusCode = (error as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode || 500;
     return NextResponse.json({ error: 'Failed to upload file.', details: errorMessage }, { status: statusCode });
   } finally {
     if (tempDir) {

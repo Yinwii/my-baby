@@ -61,7 +61,7 @@ export default function BabyInfo() {
       }
       setIsEditing(false)
       alert('宝宝信息已保存！')
-    } catch (error) {
+    } catch {
       alert('保存失败，请重试')
     }
   }

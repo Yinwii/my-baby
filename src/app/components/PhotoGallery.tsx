@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { useBaby } from '@/hooks/useBaby'
 
 interface MediaItem { // Renamed from Photo
@@ -55,7 +56,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     description: ''
   });
 
-  const calculateAge = (date: string) => {
+  const calculateAge = useCallback((date: string) => {
     if (!baby?.birthDate) return '未知'
     
     const birth = new Date(baby.birthDate)
@@ -74,7 +75,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
       const months = Math.floor((diffDays % 365) / 30)
       return `${years}岁${months}个月`
     }
-  }
+  }, [baby?.birthDate])
 
   // Add useEffect to load existing media items
   useEffect(() => {
@@ -87,7 +88,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
             const items = await response.json()
             console.log('Loaded media items:', items)
             // Log each item's URL for debugging
-            items.forEach((item: any, index: number) => {
+            items.forEach((item: MediaItem, index: number) => {
               console.log(`Media item ${index + 1}:`, {
                 id: item.id,
                 title: item.title,
@@ -96,7 +97,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
                 thumbnailUrl: item.thumbnailUrl
               });
             });
-            const itemsWithAge = items.map((item: any) => ({
+            const itemsWithAge = items.map((item: MediaItem) => ({
               ...item,
               age: calculateAge(item.date)
             }))
@@ -111,7 +112,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     }
     
     loadMediaItems()
-  }, [baby?.id, baby?.birthDate])
+  }, [baby?.id, calculateAge])
 
   // Update ages when baby birth date changes
   useEffect(() => {
@@ -122,7 +123,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
       }))
       setMediaItems(updatedItems)
     }
-  }, [baby?.birthDate])
+  }, [baby?.birthDate, calculateAge, mediaItems])
 
   // Renamed from handleUploadPhoto to handleUploadMediaItem
   const handleUploadMediaItem = async () => {
@@ -485,10 +486,12 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
               
               <div className="aspect-video bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
                 {selectedMediaItem.mediaType === 'IMAGE' ? (
-                  <img
+                  <Image
                     src={selectedMediaItem.url}
                     alt={selectedMediaItem.title}
                     className="max-w-full max-h-full object-contain"
+                    width={500}
+                    height={500}
                     onError={(e) => {
                       console.error('Modal image failed to load:', selectedMediaItem.url);
                       console.error('Modal image error event:', e);
@@ -573,10 +576,12 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
                 >
                   <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden shadow-md group-hover:shadow-lg transition-shadow relative">
                     {item.mediaType === 'IMAGE' ? (
-                      <img
+                      <Image
                         src={item.url}
                         alt={item.title}
                         className="w-full h-full object-cover"
+                        width={500}
+                        height={500}
                         onError={(e) => {
                           console.error('Image failed to load:', item.url);
                           console.error('Image error event:', e);
@@ -590,10 +595,12 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
                       />
                     ) : item.mediaType === 'VIDEO' ? (
                       <>
-                        <img
+                        <Image
                           src={item.thumbnailUrl || '/placeholder-video-thumb.jpg'} // Fallback thumbnail
                           alt={item.title + " thumbnail"}
                           className="w-full h-full object-cover"
+                          width={500}
+                          height={500}
                           onError={(e) => {
                             console.error('Video thumbnail failed to load:', item.thumbnailUrl);
                             e.currentTarget.style.display = 'none';

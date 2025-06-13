@@ -12,7 +12,7 @@ interface DashboardProps {
 
 export default function Dashboard({ setActiveTab }: DashboardProps) {
   const { baby, loading: babyLoading } = useBaby()
-  const { records, loading: recordsLoading } = useGrowthRecords(baby?.id)
+  const { records } = useGrowthRecords(baby?.id)
   const { milestones, loading: milestonesLoading } = useMilestones(baby?.id)
 
   const [currentAge, setCurrentAge] = useState('')
@@ -233,8 +233,8 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                       />
                       <Tooltip 
                         labelFormatter={(label) => `📅 日期: ${label}`}
-                        formatter={(value: any, name: string) => [
-                          value ? `${value} ${name === '体重' ? 'kg' : 'cm'}` : '无数据',
+                        formatter={(value: unknown, name: string) => [
+                          (typeof value === 'number' && value !== null) ? `${value} ${name === '体重' ? 'kg' : 'cm'}` : '无数据',
                           name === '体重' ? '⚖️ 体重' : '📏 身高'
                         ]}
                         contentStyle={{
