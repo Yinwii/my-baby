@@ -60,8 +60,8 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     if (!baby?.birthDate) return '未知'
     
     const birth = new Date(baby.birthDate)
-    const recordDate = new Date(date)
-    const diffTime = Math.abs(recordDate.getTime() - birth.getTime())
+    const photoDate = new Date(date)
+    const diffTime = Math.abs(photoDate.getTime() - birth.getTime())
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     
     if (diffDays < 30) {
@@ -77,42 +77,34 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     }
   }, [baby?.birthDate])
 
-  // Add useEffect to load existing media items
+  // Load media items when baby changes or component mounts
   useEffect(() => {
     const loadMediaItems = async () => {
-      if (baby?.id) {
-        try {
-          console.log('Loading media items for baby:', baby.id)
-          const response = await fetch(`/api/photos?babyId=${baby.id}`)
-          if (response.ok) {
-            const items = await response.json()
-            console.log('Loaded media items:', items)
-            // Log each item's URL for debugging
-            items.forEach((item: MediaItem, index: number) => {
-              console.log(`Media item ${index + 1}:`, {
-                id: item.id,
-                title: item.title,
-                mediaType: item.mediaType,
-                url: item.url,
-                thumbnailUrl: item.thumbnailUrl
-              });
-            });
-            const itemsWithAge = items.map((item: MediaItem) => ({
-              ...item,
-              age: calculateAge(item.date)
-            }))
-            setMediaItems(itemsWithAge)
-          } else {
-            console.error('Failed to load media items:', response.status)
-          }
-        } catch (error) {
-          console.error('Error loading media items:', error)
+      if (!baby?.id) {
+        setMediaItems([])
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/photos?babyId=${baby.id}`)
+        
+        if (response.ok) {
+          const data = await response.json()
+          const itemsWithAge = data.map((item: MediaItem) => ({
+            ...item,
+            age: calculateAge(item.date)
+          }))
+          setMediaItems(itemsWithAge)
+        } else {
+          console.error('Failed to fetch media items')
         }
+      } catch (error) {
+        console.error('Error loading media items:', error)
       }
     }
     
     loadMediaItems()
-  }, [baby?.id]) // Remove calculateAge dependency to prevent infinite re-renders
+  }, [baby?.id, calculateAge])
 
   // Update ages when baby birth date changes
   useEffect(() => {
@@ -127,7 +119,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
         }))
       })
     }
-  }, [baby?.birthDate]) // Remove calculateAge and mediaItems dependencies to prevent infinite re-renders
+  }, [baby?.birthDate, calculateAge])
 
   // Renamed from handleUploadPhoto to handleUploadMediaItem
   const handleUploadMediaItem = async () => {
