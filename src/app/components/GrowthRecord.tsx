@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useBaby } from '@/hooks/useBaby'
 import { useGrowthRecords } from '@/hooks/useGrowthRecords'
 
@@ -17,6 +17,8 @@ export default function GrowthRecord() {
   const { baby } = useBaby()
   const { records, loading, error, createRecord, updateRecord, deleteRecord } = useGrowthRecords(baby?.id)
   
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingRecord, setEditingRecord] = useState<GrowthEntry | null>(null)
   const [formData, setFormData] = useState({
@@ -27,9 +29,72 @@ export default function GrowthRecord() {
     notes: ''
   })
 
+  // 日历相关函数
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+  }
+
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay()
+  }
+
+  const formatDateString = (year: number, month: number, day: number) => {
+    return `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+  }
+
+  // 生成日历数据
+  const calendarData = useMemo(() => {
+    const year = currentDate.getFullYear()
+    const month = currentDate.getMonth()
+    const daysInMonth = getDaysInMonth(currentDate)
+    const firstDay = getFirstDayOfMonth(currentDate)
+    
+    const days = []
+    
+    // 添加上个月的空白天数
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null)
+    }
+    
+    // 添加当月的天数
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateString = formatDateString(year, month, day)
+      const record = records.find(r => r.date.split('T')[0] === dateString)
+      days.push({
+        day,
+        dateString,
+        record,
+        isToday: dateString === new Date().toISOString().split('T')[0]
+      })
+    }
+    
+    return days
+  }, [currentDate, records])
+
+  // 获取记录按月份分组的统计
+  const monthlyStats = useMemo(() => {
+    const currentMonthRecords = records.filter(record => {
+      const recordDate = new Date(record.date)
+      return recordDate.getFullYear() === currentDate.getFullYear() &&
+             recordDate.getMonth() === currentDate.getMonth()
+    })
+
+    const weightRecords = currentMonthRecords.filter(r => r.weight).length
+    const heightRecords = currentMonthRecords.filter(r => r.height).length
+    const headRecords = currentMonthRecords.filter(r => r.headCircumference).length
+
+    return {
+      totalRecords: currentMonthRecords.length,
+      weightRecords,
+      heightRecords,
+      headRecords,
+      latestRecord: currentMonthRecords[0]
+    }
+  }, [records, currentDate])
+
   const resetForm = () => {
     setFormData({
-      date: new Date().toISOString().split('T')[0],
+      date: selectedDate || new Date().toISOString().split('T')[0],
       weight: '',
       height: '',
       headCircumference: '',
@@ -37,6 +102,7 @@ export default function GrowthRecord() {
     })
     setEditingRecord(null)
     setShowForm(false)
+    setSelectedDate(null)
   }
 
   const handleSubmit = async () => {
@@ -75,15 +141,29 @@ export default function GrowthRecord() {
     }
   }
 
-  const handleEdit = (record: GrowthEntry) => {
-    setEditingRecord(record)
-    setFormData({
-      date: record.date.split('T')[0],
-      weight: record.weight?.toString() || '',
-      height: record.height?.toString() || '',
-      headCircumference: record.headCircumference?.toString() || '',
-      notes: record.notes || ''
-    })
+  const handleDateClick = (dateString: string, record?: GrowthEntry) => {
+    setSelectedDate(dateString)
+    if (record) {
+      // 编辑现有记录
+      setEditingRecord(record)
+      setFormData({
+        date: record.date.split('T')[0],
+        weight: record.weight?.toString() || '',
+        height: record.height?.toString() || '',
+        headCircumference: record.headCircumference?.toString() || '',
+        notes: record.notes || ''
+      })
+    } else {
+      // 添加新记录
+      setEditingRecord(null)
+      setFormData({
+        date: dateString,
+        weight: '',
+        height: '',
+        headCircumference: '',
+        notes: ''
+      })
+    }
     setShowForm(true)
   }
 
@@ -93,6 +173,7 @@ export default function GrowthRecord() {
     try {
       await deleteRecord(id)
       alert('成长记录已删除！')
+      resetForm()
     } catch (error) {
       console.error('Error deleting record:', error)
       alert('删除失败，请重试')
@@ -120,20 +201,36 @@ export default function GrowthRecord() {
     }
   }
 
-  const getGrowthTrend = (current: number, previous: number) => {
-    if (previous === 0) return { icon: '➖', color: 'text-gray-500' }
-    const diff = current - previous
-    if (diff > 0) return { icon: '📈', color: 'text-green-500' }
-    if (diff < 0) return { icon: '📉', color: 'text-red-500' }
-    return { icon: '➖', color: 'text-gray-500' }
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev)
+      if (direction === 'prev') {
+        newDate.setMonth(prev.getMonth() - 1)
+      } else {
+        newDate.setMonth(prev.getMonth() + 1)
+      }
+      return newDate
+    })
+  }
+
+  const goToToday = () => {
+    setCurrentDate(new Date())
   }
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">加载中...</p>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ 
+            width: '64px', 
+            height: '64px', 
+            border: '4px solid #e5e7eb', 
+            borderTop: '4px solid #3b82f6', 
+            borderRadius: '50%', 
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto'
+          }}></div>
+          <p style={{ marginTop: '16px', color: '#6b7280' }}>加载中...</p>
         </div>
       </div>
     )
@@ -141,190 +238,443 @@ export default function GrowthRecord() {
 
   if (error) {
     return (
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="text-center">
-          <div className="text-red-500 text-xl mb-4">❌</div>
-          <p className="text-red-600">加载失败: {error}</p>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ color: '#ef4444', fontSize: '2rem', marginBottom: '16px' }}>❌</div>
+          <p style={{ color: '#ef4444' }}>加载失败: {error}</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">成长记录</h2>
-          <p className="text-gray-600">记录宝宝的身体发育数据</p>
+          <h2 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>成长记录日历</h2>
+          <p style={{ color: '#6b7280' }}>点击日期添加或查看成长记录</p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
-          className="btn-primary"
+          onClick={() => handleDateClick(new Date().toISOString().split('T')[0])}
+          style={{ 
+            background: 'linear-gradient(to right, #ec4899, #8b5cf6)', 
+            color: 'white', 
+            padding: '12px 24px', 
+            borderRadius: '8px', 
+            border: 'none', 
+            fontWeight: '500',
+            cursor: 'pointer',
+            alignSelf: 'flex-start'
+          }}
         >
-          添加记录
+          添加今日记录
         </button>
       </div>
 
-      {/* Statistics Cards */}
-      {records.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="card">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-blue-100 rounded-full">
-                <span className="text-2xl">⚖️</span>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">最新体重</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {records[0]?.weight ? `${records[0].weight} kg` : '未记录'}
-                </p>
-                {records[1] && records[0]?.weight && records[1]?.weight && (
-                  <div className="flex items-center space-x-1 text-sm">
-                    <span className={getGrowthTrend(records[0].weight, records[1].weight).color}>
-                      {getGrowthTrend(records[0].weight, records[1].weight).icon}
-                    </span>
-                    <span className="text-gray-500">
-                      vs 上次: {(records[0].weight - records[1].weight).toFixed(1)} kg
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-green-100 rounded-full">
-                <span className="text-2xl">📏</span>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">最新身高</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {records[0]?.height ? `${records[0].height} cm` : '未记录'}
-                </p>
-                {records[1] && records[0]?.height && records[1]?.height && (
-                  <div className="flex items-center space-x-1 text-sm">
-                    <span className={getGrowthTrend(records[0].height, records[1].height).color}>
-                      {getGrowthTrend(records[0].height, records[1].height).icon}
-                    </span>
-                    <span className="text-gray-500">
-                      vs 上次: +{(records[0].height - records[1].height).toFixed(0)} cm
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-purple-100 rounded-full">
-                <span className="text-2xl">🔄</span>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">最新头围</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {records[0]?.headCircumference ? `${records[0].headCircumference} cm` : '未记录'}
-                </p>
-                {records[1] && records[0]?.headCircumference && records[1]?.headCircumference && (
-                  <div className="flex items-center space-x-1 text-sm">
-                    <span className={getGrowthTrend(records[0].headCircumference, records[1].headCircumference).color}>
-                      {getGrowthTrend(records[0].headCircumference, records[1].headCircumference).icon}
-                    </span>
-                    <span className="text-gray-500">
-                      vs 上次: +{(records[0].headCircumference - records[1].headCircumference).toFixed(1)} cm
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+      {/* Monthly Statistics */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+        <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', padding: '16px', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '6px' }}>📊</div>
+          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '2px' }}>本月记录</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#3b82f6' }}>{monthlyStats.totalRecords}</div>
         </div>
-      )}
+        <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', padding: '16px', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '6px' }}>⚖️</div>
+          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '2px' }}>体重记录</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#10b981' }}>{monthlyStats.weightRecords}</div>
+        </div>
+        <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', padding: '16px', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '6px' }}>📏</div>
+          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '2px' }}>身高记录</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#8b5cf6' }}>{monthlyStats.heightRecords}</div>
+        </div>
+        <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', padding: '16px', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '6px' }}>🔄</div>
+          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '2px' }}>头围记录</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#f59e0b' }}>{monthlyStats.headRecords}</div>
+        </div>
+      </div>
+
+      {/* Calendar Navigation */}
+      <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <button
+            onClick={() => navigateMonth('prev')}
+            style={{ 
+              padding: '12px', 
+              background: 'transparent', 
+              border: 'none', 
+              borderRadius: '8px', 
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            ← 上个月
+          </button>
+          
+          <div style={{ textAlign: 'center' }}>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>
+              {currentDate.getFullYear()}年 {currentDate.getMonth() + 1}月
+            </h3>
+            <button
+              onClick={goToToday}
+              style={{ 
+                fontSize: '0.875rem', 
+                color: '#3b82f6', 
+                background: 'none', 
+                border: 'none', 
+                cursor: 'pointer', 
+                marginTop: '4px' 
+              }}
+            >
+              回到今天
+            </button>
+          </div>
+          
+          <button
+            onClick={() => navigateMonth('next')}
+            style={{ 
+              padding: '12px', 
+              background: 'transparent', 
+              border: 'none', 
+              borderRadius: '8px', 
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            下个月 →
+          </button>
+        </div>
+
+        {/* Calendar Grid */}
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', background: 'white' }}>
+          {/* Week Headers */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: '#f3f4f6' }}>
+            {['日', '一', '二', '三', '四', '五', '六'].map(day => (
+              <div key={day} style={{ 
+                padding: '16px', 
+                textAlign: 'center', 
+                fontSize: '0.875rem', 
+                fontWeight: '500', 
+                color: '#374151', 
+                borderRight: '1px solid #e5e7eb' 
+              }}>
+                {day}
+              </div>
+            ))}
+          </div>
+          
+          {/* Calendar Days */}
+          {(() => {
+            const weeks = []
+            for (let i = 0; i < calendarData.length; i += 7) {
+              weeks.push(calendarData.slice(i, i + 7))
+            }
+            return weeks.map((week, weekIndex) => (
+              <div key={weekIndex} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+                {week.map((dayData, dayIndex) => (
+                  <div
+                    key={`${weekIndex}-${dayIndex}`}
+                    style={{
+                      minHeight: '120px',
+                      borderRight: dayIndex < 6 ? '1px solid #e5e7eb' : 'none',
+                      borderBottom: weekIndex < weeks.length - 1 ? '1px solid #e5e7eb' : 'none',
+                      background: !dayData ? '#f9fafb' : dayData.isToday ? '#dbeafe' : 'white',
+                      cursor: dayData ? 'pointer' : 'default',
+                      position: 'relative',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onClick={() => dayData && handleDateClick(dayData.dateString, dayData.record)}
+                    onMouseEnter={(e) => {
+                      if (dayData) e.currentTarget.style.backgroundColor = dayData.isToday ? '#bfdbfe' : '#f0f9ff'
+                    }}
+                    onMouseLeave={(e) => {
+                      if (dayData) e.currentTarget.style.backgroundColor = dayData.isToday ? '#dbeafe' : 'white'
+                    }}
+                  >
+                    {dayData && (
+                      <div style={{ padding: '8px', height: '100%', position: 'relative' }}>
+                        {/* Day Number */}
+                        <div style={{ 
+                          fontSize: '0.875rem', 
+                          fontWeight: '500', 
+                          marginBottom: '4px',
+                          color: dayData.isToday ? '#2563eb' : '#374151'
+                        }}>
+                          {dayData.day}
+                        </div>
+                        
+                        {/* Record Indicators */}
+                        {dayData.record ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {dayData.record.weight && (
+                              <div style={{ 
+                                fontSize: '0.75rem', 
+                                background: '#3b82f6', 
+                                color: 'white', 
+                                padding: '2px 4px', 
+                                borderRadius: '4px', 
+                                textAlign: 'center',
+                                lineHeight: '1.2'
+                              }}>
+                                ⚖️ {dayData.record.weight}kg
+                              </div>
+                            )}
+                            {dayData.record.height && (
+                              <div style={{ 
+                                fontSize: '0.75rem', 
+                                background: '#10b981', 
+                                color: 'white', 
+                                padding: '2px 4px', 
+                                borderRadius: '4px', 
+                                textAlign: 'center',
+                                lineHeight: '1.2'
+                              }}>
+                                📏 {dayData.record.height}cm
+                              </div>
+                            )}
+                            {dayData.record.headCircumference && (
+                              <div style={{ 
+                                fontSize: '0.75rem', 
+                                background: '#8b5cf6', 
+                                color: 'white', 
+                                padding: '2px 4px', 
+                                borderRadius: '4px', 
+                                textAlign: 'center',
+                                lineHeight: '1.2'
+                              }}>
+                                🔄 {dayData.record.headCircumference}cm
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          /* Add Record Indicator */
+                          <div style={{ 
+                            position: 'absolute', 
+                            top: 0, 
+                            left: 0, 
+                            right: 0, 
+                            bottom: 0, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            opacity: 0,
+                            transition: 'opacity 0.2s',
+                            fontSize: '2rem',
+                            color: '#60a5fa'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
+                          >
+                            +
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))
+          })()}
+        </div>
+      </div>
 
       {/* Add/Edit Record Form */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">
-              {editingRecord ? '编辑记录' : '添加成长记录'}
-            </h3>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 50 }}>
+          <div style={{ background: 'white', borderRadius: '12px', padding: '24px', width: '100%', maxWidth: '28rem', maxHeight: '90vh', overflow: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>
+                {editingRecord ? '编辑成长记录' : '添加成长记录'}
+              </h3>
+              {editingRecord && (
+                <button
+                  onClick={() => handleDelete(editingRecord.id)}
+                  style={{ 
+                    color: '#ef4444', 
+                    background: 'none', 
+                    border: 'none', 
+                    padding: '8px', 
+                    borderRadius: '4px', 
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  title="删除记录"
+                >
+                  🗑️
+                </button>
+              )}
+            </div>
             
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  记录日期 <span className="text-red-500">*</span>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+                  记录日期 <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                  className="input-field"
+                  style={{ 
+                    width: '100%', 
+                    padding: '12px', 
+                    border: '1px solid #d1d5db', 
+                    borderRadius: '8px', 
+                    fontSize: '0.875rem',
+                    outline: 'none',
+                    transition: 'border-color 0.2s'
+                  }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = '#ec4899'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = '#d1d5db'}
                 />
+                {baby?.birthDate && (
+                  <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>
+                    宝宝年龄: {calculateAge(formData.date)}
+                  </p>
+                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    体重 (kg) <span className="text-gray-400 text-xs">可选</span>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+                    体重 (kg) <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>可选</span>
                   </label>
                   <input
                     type="number"
                     step="0.1"
                     value={formData.weight}
                     onChange={(e) => setFormData(prev => ({ ...prev, weight: e.target.value }))}
-                    className="input-field"
+                    style={{ 
+                      width: '100%', 
+                      padding: '12px', 
+                      border: '1px solid #d1d5db', 
+                      borderRadius: '8px', 
+                      fontSize: '0.875rem',
+                      outline: 'none',
+                      transition: 'border-color 0.2s'
+                    }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#ec4899'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = '#d1d5db'}
                     placeholder="例: 7.5"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    身高 (cm) <span className="text-gray-400 text-xs">可选</span>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+                    身高 (cm) <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>可选</span>
                   </label>
                   <input
                     type="number"
+                    step="0.1"
                     value={formData.height}
                     onChange={(e) => setFormData(prev => ({ ...prev, height: e.target.value }))}
-                    className="input-field"
+                    style={{ 
+                      width: '100%', 
+                      padding: '12px', 
+                      border: '1px solid #d1d5db', 
+                      borderRadius: '8px', 
+                      fontSize: '0.875rem',
+                      outline: 'none',
+                      transition: 'border-color 0.2s'
+                    }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#ec4899'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = '#d1d5db'}
                     placeholder="例: 65"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  头围 (cm) <span className="text-gray-400 text-xs">可选</span>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+                  头围 (cm) <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>可选</span>
                 </label>
                 <input
                   type="number"
                   step="0.1"
                   value={formData.headCircumference}
                   onChange={(e) => setFormData(prev => ({ ...prev, headCircumference: e.target.value }))}
-                  className="input-field"
+                  style={{ 
+                    width: '100%', 
+                    padding: '12px', 
+                    border: '1px solid #d1d5db', 
+                    borderRadius: '8px', 
+                    fontSize: '0.875rem',
+                    outline: 'none',
+                    transition: 'border-color 0.2s'
+                  }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = '#ec4899'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = '#d1d5db'}
                   placeholder="例: 42"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  备注 <span className="text-gray-400 text-xs">可选</span>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+                  备注 <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>可选</span>
                 </label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  className="input-field"
+                  style={{ 
+                    width: '100%', 
+                    padding: '12px', 
+                    border: '1px solid #d1d5db', 
+                    borderRadius: '8px', 
+                    fontSize: '0.875rem',
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                    resize: 'vertical'
+                  }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = '#ec4899'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = '#d1d5db'}
                   rows={3}
                   placeholder="记录一些备注信息..."
                 />
               </div>
             </div>
 
-            <div className="flex space-x-3 mt-6">
-              <button onClick={handleSubmit} className="btn-primary flex-1">
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button 
+                onClick={handleSubmit} 
+                style={{ 
+                  flex: 1,
+                  background: 'linear-gradient(to right, #ec4899, #8b5cf6)', 
+                  color: 'white', 
+                  padding: '12px 24px', 
+                  borderRadius: '8px', 
+                  border: 'none', 
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
                 {editingRecord ? '更新记录' : '添加记录'}
               </button>
-              <button onClick={resetForm} className="btn-secondary flex-1">
+              <button 
+                onClick={resetForm} 
+                style={{ 
+                  flex: 1,
+                  background: 'white', 
+                  color: '#374151', 
+                  padding: '12px 24px', 
+                  borderRadius: '8px', 
+                  border: '1px solid #d1d5db', 
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+              >
                 取消
               </button>
             </div>
@@ -332,78 +682,12 @@ export default function GrowthRecord() {
         </div>
       )}
 
-      {/* Records List */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-bold text-gray-800">历史记录</h3>
-        {records.length === 0 ? (
-          <div className="card text-center py-8">
-            <div className="text-6xl mb-4">📊</div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">还没有成长记录</h3>
-            <p className="text-gray-600 mb-4">开始记录宝宝的成长数据吧</p>
-            <button
-              onClick={() => setShowForm(true)}
-              className="btn-primary"
-            >
-              添加第一条记录
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {records.map((record) => (
-              <div key={record.id} className="card">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-4 mb-2">
-                      <span className="text-lg font-semibold text-gray-800">
-                        {new Date(record.date).toLocaleDateString('zh-CN')}
-                      </span>
-                      <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                        {calculateAge(record.date)}
-                      </span>
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">体重:</span>
-                        <span className="font-semibold ml-1">{record.weight ? `${record.weight} kg` : '未记录'}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">身高:</span>
-                        <span className="font-semibold ml-1">{record.height ? `${record.height} cm` : '未记录'}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">头围:</span>
-                        <span className="font-semibold ml-1">{record.headCircumference ? `${record.headCircumference} cm` : '未测量'}</span>
-                      </div>
-                    </div>
-                    
-                    {record.notes && (
-                      <p className="text-sm text-gray-600 mt-2">{record.notes}</p>
-                    )}
-                  </div>
-                  
-                  <div className="flex space-x-2 ml-4">
-                    <button
-                      onClick={() => handleEdit(record)}
-                      className="text-blue-600 hover:bg-blue-100 p-2 rounded transition-colors"
-                      title="编辑"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => handleDelete(record.id)}
-                      className="text-red-600 hover:bg-red-100 p-2 rounded transition-colors"
-                      title="删除"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   )
 } 
