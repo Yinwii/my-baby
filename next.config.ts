@@ -15,13 +15,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
-      // Add your custom domain if you have one
-      // {
-      //   protocol: 'https',
-      //   hostname: 'your-custom-domain.com',
-      //   port: '',
-      //   pathname: '/**',
-      // }
+      {
+        protocol: 'https',
+        hostname: '*20250530.com',
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
   /* config options here */
