@@ -1,4 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+
+// 添加简单的内存缓存
+const cache = new Map<string, { data: any; timestamp: number }>()
+const CACHE_DURATION = 5 * 60 * 1000 // 5分钟缓存
 
 interface Baby {
   id: string
@@ -15,7 +19,7 @@ interface Baby {
   _count?: {
     growthRecords: number
     milestones: number
-    photos: number
+    mediaItems: number
     diaryEntries: number
   }
 }
@@ -25,21 +29,38 @@ export function useBaby() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchBaby = async () => {
+  const fetchBaby = useCallback(async (useCache = true) => {
     try {
       setLoading(true)
+      
+      // 检查缓存
+      if (useCache) {
+        const cached = cache.get('baby')
+        if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+          setBaby(cached.data)
+          setLoading(false)
+          return cached.data
+        }
+      }
+      
       const response = await fetch('/api/baby')
       if (!response.ok) {
         throw new Error('Failed to fetch baby data')
       }
       const data = await response.json()
+      
+      // 更新缓存
+      cache.set('baby', { data, timestamp: Date.now() })
+      
       setBaby(data)
+      return data
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
+      throw err
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   const createBaby = async (babyData: Omit<Baby, 'id' | '_count'>) => {
     try {
@@ -54,6 +75,9 @@ export function useBaby() {
         throw new Error('Failed to create baby')
       }
       const data = await response.json()
+      
+      // 清除缓存并更新状态
+      cache.delete('baby')
       setBaby(data)
       return data
     } catch (err) {
@@ -75,6 +99,9 @@ export function useBaby() {
         throw new Error('Failed to update baby')
       }
       const data = await response.json()
+      
+      // 清除缓存并更新状态
+      cache.delete('baby')
       setBaby(data)
       return data
     } catch (err) {
@@ -85,7 +112,7 @@ export function useBaby() {
 
   useEffect(() => {
     fetchBaby()
-  }, [])
+  }, [fetchBaby])
 
   return {
     baby,

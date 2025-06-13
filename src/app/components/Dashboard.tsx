@@ -53,6 +53,30 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
     身高: record.height || null,
   })).reverse() || [] // 反转数组以按时间正序显示
 
+  // 计算Y轴的动态范围
+  const calculateAxisDomain = (dataKey: '体重' | '身高', buffer = 0.1) => {
+    const values = chartData
+      .map(item => item[dataKey])
+      .filter(value => value !== null && value !== undefined) as number[]
+    
+    if (values.length === 0) return ['dataMin', 'dataMax']
+    
+    const minValue = Math.min(...values)
+    const maxValue = Math.max(...values)
+    const range = maxValue - minValue
+    
+    // 如果数据范围很小，给一个最小缓冲区
+    const minBuffer = Math.max(range * buffer, 0.5)
+    
+    return [
+      Math.max(0, minValue - minBuffer), // 确保不为负数
+      maxValue + minBuffer
+    ]
+  }
+
+  const weightDomain = calculateAxisDomain('体重', 0.15)
+  const heightDomain = calculateAxisDomain('身高', 0.05)
+
   if (babyLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -84,7 +108,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
     <div className="min-h-screen p-4 lg:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* 统一的顶部卡片网格 */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-6">
           {/* 宝宝信息卡片 - 占据更多空间 */}
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <div className="card p-6 h-full bg-gradient-to-br from-pink-50 to-purple-50 border-2 border-pink-200 min-h-[140px]">
@@ -139,6 +163,23 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-2">里程碑数</h3>
               <p className="text-base font-bold text-gray-800">{milestones?.length || 0} 个</p>
+            </div>
+          </div>
+
+          {/* 新增：图片数量卡片 */}
+          <div className="card p-6 bg-gradient-to-br from-orange-50 to-red-100 border border-orange-200 min-h-[140px]">
+            <div className="flex flex-col items-center text-center h-full justify-center">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-red-600 flex items-center justify-center text-white text-xl mb-3">
+                📸
+              </div>
+              <h3 className="text-sm font-medium text-gray-600 mb-2">图片数量</h3>
+              <p className="text-base font-bold text-gray-800">{baby._count?.mediaItems || 0} 张</p>
+              <button 
+                onClick={() => setActiveTab('photos')}
+                className="text-xs text-orange-600 hover:text-orange-800 font-medium mt-1"
+              >
+                查看相册 →
+              </button>
             </div>
           </div>
         </div>
@@ -218,6 +259,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                       <YAxis 
                         yAxisId="weight"
                         orientation="left"
+                        domain={weightDomain}
                         tick={{ fontSize: 12, fill: '#374151', fontWeight: '500' }}
                         stroke="#0891b2"
                         strokeWidth={2}
@@ -226,6 +268,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                       <YAxis 
                         yAxisId="height"
                         orientation="right"
+                        domain={heightDomain}
                         tick={{ fontSize: 12, fill: '#374151', fontWeight: '500' }}
                         stroke="#059669"
                         strokeWidth={2}
