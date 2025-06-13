@@ -194,10 +194,10 @@ export default function Milestones() {
           <h3 className="text-lg font-bold text-gray-800 mb-4">热门标签</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {getTagStats().map(({ tag, count }) => (
-              <div key={tag} className="text-center p-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+              <div key={tag} className="text-center p-1 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
                 <div className="text-2xl mb-1">🏷️</div>
                 <div className="text-sm text-gray-600 mb-1">{tag}</div>
-                <div className="text-lg font-bold text-purple-600">{count}</div>
+                <div className="text-sm font-bold text-purple-600">{count}</div>
               </div>
             ))}
           </div>
@@ -214,13 +214,13 @@ export default function Milestones() {
 
         <div className="card text-center">
           <div className="text-3xl mb-2">🏷️</div>
-          <div className="text-sm text-gray-600 mb-1">使用标签</div>
+          <div className="text-sm text-gray-600 mb-1">标签</div>
           <div className="text-2xl font-bold text-blue-600">{allTags.length}</div>
         </div>
 
         <div className="card text-center">
           <div className="text-3xl mb-2">📅</div>
-          <div className="text-sm text-gray-600 mb-1">最新记录</div>
+          <div className="text-sm text-gray-600 mb-1">最近记录</div>
           <div className="text-2xl font-bold text-green-600">
             {milestones[0] ? new Date(milestones[0].date).toLocaleDateString('zh-CN') : '-'}
           </div>

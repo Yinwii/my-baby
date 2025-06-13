@@ -112,18 +112,22 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     }
     
     loadMediaItems()
-  }, [baby?.id, calculateAge])
+  }, [baby?.id]) // Remove calculateAge dependency to prevent infinite re-renders
 
   // Update ages when baby birth date changes
   useEffect(() => {
-    if (baby?.birthDate && mediaItems.length > 0) {
-      const updatedItems = mediaItems.map(item => ({
-        ...item,
-        age: calculateAge(item.date)
-      }))
-      setMediaItems(updatedItems)
+    if (baby?.birthDate) {
+      // Only update if we have items and the birthDate has actually changed
+      setMediaItems(prevItems => {
+        if (prevItems.length === 0) return prevItems
+        
+        return prevItems.map(item => ({
+          ...item,
+          age: calculateAge(item.date)
+        }))
+      })
     }
-  }, [baby?.birthDate, calculateAge, mediaItems])
+  }, [baby?.birthDate]) // Remove calculateAge and mediaItems dependencies to prevent infinite re-renders
 
   // Renamed from handleUploadPhoto to handleUploadMediaItem
   const handleUploadMediaItem = async () => {

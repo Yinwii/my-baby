@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Navigation from './components/Navigation'
 import Dashboard from './components/Dashboard'
 import BabyInfo from './components/BabyInfo'
@@ -14,6 +14,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set(['dashboard']))
   const { baby } = useBaby()
+  const growthPreloadedRef = useRef(false)
 
   // 启用Dashboard预加载
   useDashboardPreloader()
@@ -23,14 +24,20 @@ export default function Home() {
 
   // 预加载策略：当baby数据加载完成后，预加载常用的标签页
   useEffect(() => {
-    if (baby?.id && !loadedTabs.has('growth')) {
+    if (baby?.id && !growthPreloadedRef.current) {
       // 延迟1秒后预加载成长记录，避免阻塞首页渲染
       const timer = setTimeout(() => {
-        setLoadedTabs(prev => new Set([...prev, 'growth']))
+        setLoadedTabs(prev => {
+          if (!prev.has('growth')) {
+            growthPreloadedRef.current = true
+            return new Set([...prev, 'growth'])
+          }
+          return prev
+        })
       }, 1000)
       return () => clearTimeout(timer)
     }
-  }, [baby?.id, loadedTabs])
+  }, [baby?.id]) // Remove loadedTabs dependency to prevent infinite re-renders
 
   // 智能预加载：当用户切换到某个标签页时，标记为已加载
   const handleTabChange = (tab: string) => {

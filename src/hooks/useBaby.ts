@@ -111,8 +111,38 @@ export function useBaby() {
   }
 
   useEffect(() => {
-    fetchBaby()
-  }, [fetchBaby])
+    const initializeFetch = async () => {
+      try {
+        setLoading(true)
+        
+        // 检查缓存
+        const cached = cache.get('baby')
+        if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+          setBaby(cached.data)
+          setLoading(false)
+          return cached.data
+        }
+        
+        const response = await fetch('/api/baby')
+        if (!response.ok) {
+          throw new Error('Failed to fetch baby data')
+        }
+        const data = await response.json()
+        
+        // 更新缓存
+        cache.set('baby', { data, timestamp: Date.now() })
+        
+        setBaby(data)
+        return data
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    initializeFetch()
+  }, []) // Remove fetchBaby dependency to prevent infinite re-renders
 
   return {
     baby,

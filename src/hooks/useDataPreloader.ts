@@ -59,7 +59,7 @@ export function useDataPreloader(options: PreloadOptions = {}) {
         console.warn('Some data preloading failed:', error)
       }
     }
-  }, [baby?.id, baby?.birthDate, enabledTabs, growthRecords, milestones, photos])
+  }, [baby?.id, baby?.birthDate, enabledTabs, growthRecords.refetch, milestones.refetch, photos.fetchPhotos])
 
   useEffect(() => {
     if (!baby?.id) return
@@ -88,7 +88,7 @@ export function useDataPreloader(options: PreloadOptions = {}) {
     }
 
     executePreload()
-  }, [baby?.id, preloadData, delay, priority])
+  }, [baby?.id, delay, priority])
 
   return {
     preloadData,

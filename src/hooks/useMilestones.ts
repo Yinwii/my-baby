@@ -170,17 +170,52 @@ export function useMilestones(babyId?: string) {
 
   useEffect(() => {
     if (babyId) {
-      // 首先检查缓存
-      const cacheKey = `milestones-${babyId}`
-      const cached = milestonesCache.get(cacheKey)
-      
-      if (cached && Date.now() - cached.timestamp < CACHE_DURATION && !cached.loading) {
-        setMilestones(cached.data)
-      } else if (!cached?.loading) {
-        fetchMilestones()
+      const initializeFetch = async () => {
+        const cacheKey = `milestones-${babyId}`
+        const cached = milestonesCache.get(cacheKey)
+        
+        if (cached && Date.now() - cached.timestamp < CACHE_DURATION && !cached.loading) {
+          setMilestones(cached.data)
+        } else if (!cached?.loading) {
+          // Inline fetch logic to avoid dependency issues
+          try {
+            setLoading(true)
+            
+            // 设置加载状态到缓存
+            milestonesCache.set(cacheKey, {
+              data: cached?.data || [],
+              timestamp: Date.now(),
+              loading: true
+            })
+            
+            const response = await fetch(`/api/milestones?babyId=${babyId}`)
+            if (!response.ok) {
+              throw new Error('Failed to fetch milestones')
+            }
+            const data = await response.json()
+            
+            // 更新缓存
+            milestonesCache.set(cacheKey, {
+              data,
+              timestamp: Date.now(),
+              loading: false
+            })
+            
+            setMilestones(data)
+          } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred')
+            
+            // 清除错误的缓存
+            milestonesCache.delete(cacheKey)
+          } finally {
+            setLoading(false)
+          }
+        }
       }
+
+      initializeFetch()
     }
-  }, [babyId, fetchMilestones])
+  }, [babyId]) // Remove fetchMilestones dependency to prevent infinite re-renders
 
   return {
     milestones,

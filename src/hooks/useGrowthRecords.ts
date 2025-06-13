@@ -171,17 +171,52 @@ export function useGrowthRecords(babyId?: string) {
 
   useEffect(() => {
     if (babyId) {
-      // 首先检查缓存
-      const cacheKey = `growth-records-${babyId}`
-      const cached = growthRecordsCache.get(cacheKey)
-      
-      if (cached && Date.now() - cached.timestamp < CACHE_DURATION && !cached.loading) {
-        setRecords(cached.data)
-      } else if (!cached?.loading) {
-        fetchRecords()
+      const initializeFetch = async () => {
+        const cacheKey = `growth-records-${babyId}`
+        const cached = growthRecordsCache.get(cacheKey)
+        
+        if (cached && Date.now() - cached.timestamp < CACHE_DURATION && !cached.loading) {
+          setRecords(cached.data)
+        } else if (!cached?.loading) {
+          // Inline fetch logic to avoid dependency issues
+          try {
+            setLoading(true)
+            
+            // 设置加载状态到缓存
+            growthRecordsCache.set(cacheKey, {
+              data: cached?.data || [],
+              timestamp: Date.now(),
+              loading: true
+            })
+            
+            const response = await fetch(`/api/growth-records?babyId=${babyId}`)
+            if (!response.ok) {
+              throw new Error('Failed to fetch growth records')
+            }
+            const data = await response.json()
+            
+            // 更新缓存
+            growthRecordsCache.set(cacheKey, {
+              data,
+              timestamp: Date.now(),
+              loading: false
+            })
+            
+            setRecords(data)
+          } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred')
+            
+            // 清除错误的缓存
+            growthRecordsCache.delete(cacheKey)
+          } finally {
+            setLoading(false)
+          }
+        }
       }
+
+      initializeFetch()
     }
-  }, [babyId, fetchRecords])
+  }, [babyId]) // Remove fetchRecords dependency to prevent infinite re-renders
 
   return {
     records,
