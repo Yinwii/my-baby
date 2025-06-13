@@ -14,7 +14,7 @@ interface Milestone {
   babyId: string
   date: string
   title: string
-  description: string
+  description?: string
   tags: string[]
   createdAt: string
   updatedAt: string

@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         babyId: data.babyId,
         date: new Date(data.date),
         title: data.title,
-        description: data.description,
+        description: data.description || null,
         tags: data.tags || [],
       },
     })

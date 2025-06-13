@@ -42,7 +42,7 @@ export async function PUT(
       data: {
         date: data.date ? new Date(data.date) : undefined,
         title: data.title,
-        description: data.description,
+        description: data.description !== undefined ? (data.description || null) : undefined,
         tags: data.tags,
       },
     })

@@ -59,7 +59,7 @@ model Milestone {
   babyId      String
   date        DateTime
   title       String
-  description String
+  description String?
   tags        String[] // Array of tag strings for categorization
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

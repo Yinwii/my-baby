@@ -8,7 +8,7 @@ interface Milestone {
   id: string
   date: string
   title: string
-  description: string
+  description?: string
   tags: string[]
 }
 
@@ -37,8 +37,8 @@ export default function Milestones() {
   }
 
   const handleSubmit = async () => {
-    if (!formData.title || !formData.description) {
-      alert('请填写标题和描述')
+    if (!formData.title) {
+      alert('请填写标题')
       return
     }
 
@@ -52,7 +52,7 @@ export default function Milestones() {
         babyId: baby.id,
         date: formData.date,
         title: formData.title,
-        description: formData.description,
+        ...(formData.description && { description: formData.description }),
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
       }
 
@@ -76,7 +76,7 @@ export default function Milestones() {
     setFormData({
       date: milestone.date.split('T')[0],
       title: milestone.title,
-      description: milestone.description,
+      description: milestone.description || '',
       tags: milestone.tags.join(', ')
     })
     setShowForm(true)
@@ -364,9 +364,11 @@ export default function Milestones() {
                       {milestone.title}
                     </h4>
                     
-                    <p className="text-gray-600 text-sm leading-relaxed mb-3">
-                      {milestone.description}
-                    </p>
+                    {milestone.description && (
+                      <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                        {milestone.description}
+                      </p>
+                    )}
 
                     {milestone.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2">
