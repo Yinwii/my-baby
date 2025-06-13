@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 
 // 添加简单的内存缓存
-const cache = new Map<string, { data: any; timestamp: number }>()
+const cache = new Map<string, { data: Baby; timestamp: number }>()
 const CACHE_DURATION = 5 * 60 * 1000 // 5分钟缓存
 
 interface Baby {
