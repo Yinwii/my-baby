@@ -112,7 +112,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-6">
           {/* 宝宝信息卡片 - 占据更多空间 */}
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
-            <div className="card p-6 h-full bg-gradient-to-br from-pink-50 to-purple-50 border-2 border-pink-200 min-h-[140px]">
+            <div className="card p-4 h-full bg-gradient-to-br from-pink-50 to-purple-50 border-2 border-pink-200 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
               <div className="flex items-center space-x-4 h-full">
                 <div className="w-20 h-20 flex-shrink-0">
                   {baby.avatar ? (
@@ -147,7 +147,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           </div>
 
           {/* 体重卡片 */}
-          <div className="card p-6 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 min-h-[140px]">
+          <div className="card p-4 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl mb-3">
                 ⚖️
@@ -158,7 +158,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           </div>
 
           {/* 身高卡片 */}
-          <div className="card p-6 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 min-h-[140px]">
+          <div className="card p-4 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center text-white text-xl mb-3">
                 📏
@@ -169,7 +169,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           </div>
 
           {/* 里程碑数卡片 */}
-          <div className="card p-6 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 min-h-[140px]">
+          <div className="card p-4 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white text-xl mb-3">
                 🏆
@@ -180,7 +180,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           </div>
 
           {/* 新增：图片数量卡片 */}
-          <div className="card p-6 bg-gradient-to-br from-orange-50 to-red-100 border border-orange-200 min-h-[140px]">
+          <div className="card p-4 bg-gradient-to-br from-orange-50 to-red-100 border border-orange-200 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-red-600 flex items-center justify-center text-white text-xl mb-3">
                 📸
