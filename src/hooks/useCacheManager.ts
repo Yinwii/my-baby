@@ -22,7 +22,7 @@ class CacheEventEmitter {
 
 // 全局缓存管理器
 class CacheManager {
-  private cache = new Map<string, { data: any; timestamp: number; loading: boolean }>()
+  private cache = new Map<string, { data: unknown; timestamp: number; loading: boolean }>()
   private eventEmitter = new CacheEventEmitter()
   private defaultDuration = 5 * 60 * 1000 // 5分钟
 
@@ -36,7 +36,7 @@ class CacheManager {
       return null
     }
     
-    return cached.data
+    return cached.data as T
   }
 
   set<T>(key: string, data: T) {
@@ -109,6 +109,11 @@ class CacheManager {
     this.eventEmitter.on('*', callback)
     return () => this.eventEmitter.off('*', callback)
   }
+
+  // 获取缓存大小
+  get size() {
+    return this.cache.size
+  }
 }
 
 // 全局缓存管理器实例
@@ -121,7 +126,7 @@ export function useCache<T>(
   options: {
     duration?: number
     autoRefresh?: boolean
-    dependencies?: any[]
+    dependencies?: readonly unknown[]
   } = {}
 ) {
   const { duration, autoRefresh = true, dependencies = [] } = options
@@ -179,7 +184,7 @@ export function useCache<T>(
     if (autoRefresh) {
       fetch()
     }
-  }, [fetch, autoRefresh, ...dependencies])
+  }, [fetch, autoRefresh])
 
   return {
     data,
@@ -222,7 +227,7 @@ export function useCacheStatus() {
   useEffect(() => {
     const unsubscribe = cacheManager.subscribeGlobal(() => {
       setCacheStats({
-        totalEntries: (cacheManager as any).cache.size,
+        totalEntries: cacheManager.size,
         lastUpdated: Date.now()
       })
     })

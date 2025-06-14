@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { useCache, useCacheInvalidation } from './useCacheManager'
 
 // 移除旧的缓存实现
