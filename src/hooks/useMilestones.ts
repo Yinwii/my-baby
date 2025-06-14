@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
+import { useCache, useCacheInvalidation } from './useCacheManager'
 
-// 全局缓存
-const milestonesCache = new Map<string, {
-  data: Milestone[]
-  timestamp: number
-  loading: boolean
-}>()
-
-const CACHE_DURATION = 5 * 60 * 1000 // 5分钟缓存
+// 移除旧的缓存实现
+// const milestonesCache = new Map<string, {
+//   data: Milestone[]
+//   timestamp: number
+//   loading: boolean
+// }>()
+// const CACHE_DURATION = 5 * 60 * 1000 // 5分钟缓存
 
 interface Milestone {
   id: string
@@ -21,66 +21,37 @@ interface Milestone {
 }
 
 export function useMilestones(babyId?: string) {
-  const [milestones, setMilestones] = useState<Milestone[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetchMilestones = useCallback(async (forceRefresh = false) => {
-    if (!babyId) return
-    
-    const cacheKey = `milestones-${babyId}`
-    const cached = milestonesCache.get(cacheKey)
-    
-    // 检查缓存是否有效
-    if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      setMilestones(cached.data)
-      setLoading(cached.loading)
-      return cached.data
-    }
-    
-    // 防止重复请求
-    if (cached?.loading) {
-      return
-    }
-    
-    try {
-      setLoading(true)
-      
-      // 设置加载状态到缓存
-      milestonesCache.set(cacheKey, {
-        data: cached?.data || [],
-        timestamp: Date.now(),
-        loading: true
-      })
-      
+  const { invalidate, invalidateBabyData } = useCacheInvalidation()
+  const cacheKey = `milestones-${babyId}`
+  
+  // 使用新的缓存系统
+  const {
+    data: milestones,
+    loading,
+    error,
+    refetch
+  } = useCache<Milestone[]>(
+    cacheKey,
+    async () => {
+      if (!babyId) return []
       const response = await fetch(`/api/milestones?babyId=${babyId}`)
       if (!response.ok) {
         throw new Error('Failed to fetch milestones')
       }
-      const data = await response.json()
-      
-      // 更新缓存
-      milestonesCache.set(cacheKey, {
-        data,
-        timestamp: Date.now(),
-        loading: false
-      })
-      
-      setMilestones(data)
-      return data
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      
-      // 清除错误的缓存
-      milestonesCache.delete(cacheKey)
-      throw err
-    } finally {
-      setLoading(false)
+      return response.json()
+    },
+    {
+      duration: 5 * 60 * 1000, // 5分钟缓存
+      autoRefresh: true,
+      dependencies: [babyId]
     }
-  }, [babyId])
+  )
+
+  const [operationError, setOperationError] = useState<string | null>(null)
 
   const createMilestone = async (milestoneData: Omit<Milestone, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
+      setOperationError(null)
       const response = await fetch('/api/milestones', {
         method: 'POST',
         headers: {
@@ -93,20 +64,21 @@ export function useMilestones(babyId?: string) {
       }
       const data = await response.json()
       
-      // 清除缓存并更新本地状态
-      const cacheKey = `milestones-${milestoneData.babyId}`
-      milestonesCache.delete(cacheKey)
+      // 失效相关缓存
+      invalidate(`milestones-${milestoneData.babyId}`)
+      invalidateBabyData(milestoneData.babyId) // 同时失效baby统计数据
       
-      setMilestones(prev => [data, ...prev])
       return data
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      setOperationError(errorMessage)
       throw err
     }
   }
 
   const updateMilestone = async (id: string, milestoneData: Partial<Milestone>) => {
     try {
+      setOperationError(null)
       const response = await fetch(`/api/milestones/${id}`, {
         method: 'PUT',
         headers: {
@@ -119,22 +91,23 @@ export function useMilestones(babyId?: string) {
       }
       const data = await response.json()
       
-      // 清除缓存并更新本地状态
+      // 失效相关缓存
       if (babyId) {
-        const cacheKey = `milestones-${babyId}`
-        milestonesCache.delete(cacheKey)
+        invalidate(`milestones-${babyId}`)
+        invalidateBabyData(babyId)
       }
       
-      setMilestones(prev => prev.map(milestone => milestone.id === id ? data : milestone))
       return data
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      setOperationError(errorMessage)
       throw err
     }
   }
 
   const deleteMilestone = async (id: string) => {
     try {
+      setOperationError(null)
       const response = await fetch(`/api/milestones/${id}`, {
         method: 'DELETE',
       })
@@ -142,86 +115,38 @@ export function useMilestones(babyId?: string) {
         throw new Error('Failed to delete milestone')
       }
       
-      // 清除缓存并更新本地状态
+      // 失效相关缓存
       if (babyId) {
-        const cacheKey = `milestones-${babyId}`
-        milestonesCache.delete(cacheKey)
+        invalidate(`milestones-${babyId}`)
+        invalidateBabyData(babyId)
       }
-      
-      setMilestones(prev => prev.filter(milestone => milestone.id !== id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      setOperationError(errorMessage)
       throw err
     }
   }
 
   const getMilestone = async (id: string) => {
     try {
+      setOperationError(null)
       const response = await fetch(`/api/milestones/${id}`)
       if (!response.ok) {
         throw new Error('Failed to fetch milestone')
       }
       return await response.json()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      setOperationError(errorMessage)
       throw err
     }
   }
 
-  useEffect(() => {
-    if (babyId) {
-      const initializeFetch = async () => {
-        const cacheKey = `milestones-${babyId}`
-        const cached = milestonesCache.get(cacheKey)
-        
-        if (cached && Date.now() - cached.timestamp < CACHE_DURATION && !cached.loading) {
-          setMilestones(cached.data)
-        } else if (!cached?.loading) {
-          // Inline fetch logic to avoid dependency issues
-          try {
-            setLoading(true)
-            
-            // 设置加载状态到缓存
-            milestonesCache.set(cacheKey, {
-              data: cached?.data || [],
-              timestamp: Date.now(),
-              loading: true
-            })
-            
-            const response = await fetch(`/api/milestones?babyId=${babyId}`)
-            if (!response.ok) {
-              throw new Error('Failed to fetch milestones')
-            }
-            const data = await response.json()
-            
-            // 更新缓存
-            milestonesCache.set(cacheKey, {
-              data,
-              timestamp: Date.now(),
-              loading: false
-            })
-            
-            setMilestones(data)
-          } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred')
-            
-            // 清除错误的缓存
-            milestonesCache.delete(cacheKey)
-          } finally {
-            setLoading(false)
-          }
-        }
-      }
-
-      initializeFetch()
-    }
-  }, [babyId]) // Remove fetchMilestones dependency to prevent infinite re-renders
-
   return {
-    milestones,
+    milestones: milestones || [],
     loading,
-    error,
-    refetch: fetchMilestones,
+    error: error?.message || operationError,
+    refetch: (forceRefresh = false) => refetch(forceRefresh),
     createMilestone,
     updateMilestone,
     deleteMilestone,

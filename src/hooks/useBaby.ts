@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useCache, useCacheInvalidation } from './useCacheManager'
 
-// 添加简单的内存缓存
-const cache = new Map<string, { data: Baby; timestamp: number }>()
-const CACHE_DURATION = 5 * 60 * 1000 // 5分钟缓存
+// 移除旧的缓存实现
+// const cache = new Map<string, { data: Baby; timestamp: number }>()
+// const CACHE_DURATION = 5 * 60 * 1000 // 5分钟缓存
 
 interface Baby {
   id: string
@@ -25,45 +26,34 @@ interface Baby {
 }
 
 export function useBaby() {
-  const [baby, setBaby] = useState<Baby | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetchBaby = useCallback(async (useCache = true) => {
-    try {
-      setLoading(true)
-      
-      // 检查缓存
-      if (useCache) {
-        const cached = cache.get('baby')
-        if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-          setBaby(cached.data)
-          setLoading(false)
-          return cached.data
-        }
-      }
-      
+  const { invalidateBabyData } = useCacheInvalidation()
+  
+  // 使用新的缓存系统
+  const {
+    data: baby,
+    loading,
+    error,
+    refetch
+  } = useCache<Baby>(
+    'baby',
+    async () => {
       const response = await fetch('/api/baby')
       if (!response.ok) {
         throw new Error('Failed to fetch baby data')
       }
-      const data = await response.json()
-      
-      // 更新缓存
-      cache.set('baby', { data, timestamp: Date.now() })
-      
-      setBaby(data)
-      return data
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      throw err
-    } finally {
-      setLoading(false)
+      return response.json()
+    },
+    {
+      duration: 5 * 60 * 1000, // 5分钟缓存
+      autoRefresh: true
     }
-  }, [])
+  )
+
+  const [operationError, setOperationError] = useState<string | null>(null)
 
   const createBaby = async (babyData: Omit<Baby, 'id' | '_count'>) => {
     try {
+      setOperationError(null)
       const response = await fetch('/api/baby', {
         method: 'POST',
         headers: {
@@ -76,18 +66,24 @@ export function useBaby() {
       }
       const data = await response.json()
       
-      // 清除缓存并更新状态
-      cache.delete('baby')
-      setBaby(data)
+      // 使用新的缓存失效机制
+      if (data.id) {
+        invalidateBabyData(data.id)
+      }
+      
+      // 立即刷新缓存
+      await refetch(true)
       return data
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      setOperationError(errorMessage)
       throw err
     }
   }
 
   const updateBaby = async (babyData: Partial<Baby> & { id: string }) => {
     try {
+      setOperationError(null)
       const response = await fetch('/api/baby', {
         method: 'PUT',
         headers: {
@@ -100,55 +96,26 @@ export function useBaby() {
       }
       const data = await response.json()
       
-      // 清除缓存并更新状态
-      cache.delete('baby')
-      setBaby(data)
+      // 使用新的缓存失效机制
+      invalidateBabyData(babyData.id)
+      
+      // 立即刷新缓存
+      await refetch(true)
       return data
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      setOperationError(errorMessage)
       throw err
     }
   }
 
-  useEffect(() => {
-    const initializeFetch = async () => {
-      try {
-        setLoading(true)
-        
-        // 检查缓存
-        const cached = cache.get('baby')
-        if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-          setBaby(cached.data)
-          setLoading(false)
-          return cached.data
-        }
-        
-        const response = await fetch('/api/baby')
-        if (!response.ok) {
-          throw new Error('Failed to fetch baby data')
-        }
-        const data = await response.json()
-        
-        // 更新缓存
-        cache.set('baby', { data, timestamp: Date.now() })
-        
-        setBaby(data)
-        return data
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    initializeFetch()
-  }, []) // Remove fetchBaby dependency to prevent infinite re-renders
+  // 移除旧的fetchBaby和useEffect，现在由useCache处理
 
   return {
     baby,
     loading,
-    error,
-    refetch: fetchBaby,
+    error: error?.message || operationError,
+    refetch: (useCache?: boolean) => refetch(!useCache),
     createBaby,
     updateBaby,
   }

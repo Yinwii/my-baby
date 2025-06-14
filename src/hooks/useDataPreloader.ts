@@ -3,6 +3,7 @@ import { useBaby } from './useBaby'
 import { useGrowthRecords } from './useGrowthRecords'
 import { useMilestones } from './useMilestones'
 import { usePhotos } from './usePhotos'
+import { useCacheInvalidation } from './useCacheManager'
 
 interface PreloadOptions {
   enabledTabs?: string[]
@@ -59,7 +60,7 @@ export function useDataPreloader(options: PreloadOptions = {}) {
         console.warn('Some data preloading failed:', error)
       }
     }
-  }, [baby?.id, baby?.birthDate, enabledTabs])
+  }, [baby?.id, baby?.birthDate, enabledTabs, growthRecords, milestones, photos])
 
   useEffect(() => {
     if (!baby?.id) return
@@ -108,6 +109,7 @@ export function useDashboardPreloader() {
 // 智能预加载hook - 根据用户行为模式调整
 export function useSmartPreloader(activeTab: string, loadedTabs: Set<string>) {
   const { baby } = useBaby()
+  const { invalidatePattern } = useCacheInvalidation()
   
   useEffect(() => {
     if (!baby?.id) return
@@ -117,6 +119,7 @@ export function useSmartPreloader(activeTab: string, loadedTabs: Set<string>) {
       setTimeout(() => {
         // 触发milestones预加载的逻辑
         console.log('Smart preloading: milestones')
+        // 可以在这里调用milestones的预加载
       }, 2000)
     }
 
@@ -124,7 +127,19 @@ export function useSmartPreloader(activeTab: string, loadedTabs: Set<string>) {
     if (activeTab === 'milestones' && !loadedTabs.has('photos')) {
       setTimeout(() => {
         console.log('Smart preloading: photos')
+        // 可以在这里调用photos的预加载
       }, 2000)
     }
   }, [activeTab, baby?.id, loadedTabs])
+
+  // 提供缓存管理功能
+  return {
+    // 当用户长时间不活跃时，清除特定模式的缓存
+    clearInactiveCache: () => {
+      // 可以基于用户活跃模式来清除不常用的缓存
+      if (activeTab !== 'photos') {
+        invalidatePattern('photos-')
+      }
+    }
+  }
 } 

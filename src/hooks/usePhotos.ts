@@ -1,13 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-
-// 全局缓存
-const photosCache = new Map<string, {
-  data: MediaItem[]
-  timestamp: number
-  loading: boolean
-}>()
-
-const CACHE_DURATION = 5 * 60 * 1000 // 5分钟缓存
+import { useState, useCallback } from 'react'
+import { useCache, useCacheInvalidation } from './useCacheManager'
 
 interface MediaItem {
   id: string
@@ -23,10 +15,9 @@ interface MediaItem {
 }
 
 export function usePhotos(babyId?: string) {
-  const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
+  const { invalidate, invalidateBabyData } = useCacheInvalidation()
+  const cacheKey = `photos-${babyId}`
+  
   const calculateAge = useCallback((date: string, birthDate?: string) => {
     if (!birthDate) return '未知'
     
@@ -48,68 +39,54 @@ export function usePhotos(babyId?: string) {
     }
   }, [])
 
-  const fetchPhotos = useCallback(async (forceRefresh = false, birthDate?: string) => {
-    if (!babyId) return
-    
-    const cacheKey = `photos-${babyId}`
-    const cached = photosCache.get(cacheKey)
-    
-    // 检查缓存是否有效
-    if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      setMediaItems(cached.data)
-      setLoading(cached.loading)
-      return cached.data
-    }
-    
-    // 防止重复请求
-    if (cached?.loading) {
-      return
-    }
-    
-    try {
-      setLoading(true)
-      
-      // 设置加载状态到缓存
-      photosCache.set(cacheKey, {
-        data: cached?.data || [],
-        timestamp: Date.now(),
-        loading: true
-      })
-      
+  // 使用新的缓存系统
+  const {
+    data: mediaItems,
+    loading,
+    error,
+    refetch
+  } = useCache<MediaItem[]>(
+    cacheKey,
+    async () => {
+      if (!babyId) return []
       const response = await fetch(`/api/photos?babyId=${babyId}`)
       if (!response.ok) {
         throw new Error('Failed to fetch photos')
       }
-      const data = await response.json()
-      
-      // 计算年龄
-      const itemsWithAge = data.map((item: MediaItem) => ({
-        ...item,
-        age: calculateAge(item.date, birthDate)
-      }))
-      
-      // 更新缓存
-      photosCache.set(cacheKey, {
-        data: itemsWithAge,
-        timestamp: Date.now(),
-        loading: false
-      })
-      
-      setMediaItems(itemsWithAge)
-      return itemsWithAge
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      
-      // 清除错误的缓存
-      photosCache.delete(cacheKey)
-      throw err
-    } finally {
-      setLoading(false)
+      return response.json()
+    },
+    {
+      duration: 5 * 60 * 1000, // 5分钟缓存
+      autoRefresh: false, // photos通常不自动刷新，因为可能数据量大
+      dependencies: [babyId]
     }
-  }, [babyId, calculateAge])
+  )
+
+  const [operationError, setOperationError] = useState<string | null>(null)
+
+  // 手动触发获取photos的方法
+  const fetchPhotos = useCallback(async (forceRefresh = false, birthDate?: string) => {
+    try {
+      const data = await refetch(forceRefresh)
+      
+      // 如果有birthDate，计算年龄
+      if (data && birthDate) {
+        const itemsWithAge = data.map((item: MediaItem) => ({
+          ...item,
+          age: calculateAge(item.date, birthDate)
+        }))
+        return itemsWithAge
+      }
+      
+      return data
+    } catch (err) {
+      throw err
+    }
+  }, [refetch, calculateAge])
 
   const uploadPhoto = async (uploadData: FormData) => {
     try {
+      setOperationError(null)
       // 第一步：上传文件到R2
       const uploadResponse = await fetch('/api/photos/upload', {
         method: 'POST',
@@ -137,22 +114,23 @@ export function usePhotos(babyId?: string) {
 
       const savedPhoto = await saveResponse.json()
       
-      // 清除缓存并更新本地状态
+      // 失效相关缓存
       if (babyId) {
-        const cacheKey = `photos-${babyId}`
-        photosCache.delete(cacheKey)
+        invalidate(`photos-${babyId}`)
+        invalidateBabyData(babyId) // 同时失效baby统计数据
       }
       
-      setMediaItems(prev => [savedPhoto, ...prev])
       return savedPhoto
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      setOperationError(errorMessage)
       throw err
     }
   }
 
   const deletePhoto = async (photoId: string) => {
     try {
+      setOperationError(null)
       const response = await fetch(`/api/photos/${photoId}`, {
         method: 'DELETE',
       })
@@ -162,38 +140,29 @@ export function usePhotos(babyId?: string) {
         throw new Error(errorData.error || '删除失败')
       }
 
-      // 清除缓存并更新本地状态
+      // 失效相关缓存
       if (babyId) {
-        const cacheKey = `photos-${babyId}`
-        photosCache.delete(cacheKey)
+        invalidate(`photos-${babyId}`)
+        invalidateBabyData(babyId)
       }
-      
-      setMediaItems(prev => prev.filter(item => item.id !== photoId))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      setOperationError(errorMessage)
       throw err
     }
   }
 
-  // 初始化时检查缓存
-  useEffect(() => {
-    if (babyId) {
-      const cacheKey = `photos-${babyId}`
-      const cached = photosCache.get(cacheKey)
-      
-      if (cached && Date.now() - cached.timestamp < CACHE_DURATION && !cached.loading) {
-        setMediaItems(cached.data)
-      }
-    }
-  }, [babyId])
-
   return {
-    mediaItems,
+    mediaItems: mediaItems || [],
     loading,
-    error,
+    error: error?.message || operationError,
     fetchPhotos,
     uploadPhoto,
     deletePhoto,
-    setMediaItems, // 为了兼容现有代码
+    setMediaItems: () => {
+      // 兼容现有代码，但建议使用cache invalidation
+      console.warn('setMediaItems is deprecated, use cache invalidation instead')
+    },
+    refetch: (forceRefresh = false) => refetch(forceRefresh)
   }
 } 
