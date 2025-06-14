@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 
 // 事件发射器用于缓存同步
 class CacheEventEmitter {
@@ -134,6 +134,9 @@ export function useCache<T>(
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
+  // 使用 useMemo 创建依赖的稳定引用
+  const depsString = useMemo(() => JSON.stringify(dependencies), [dependencies])
+
   const fetch = useCallback(async (forceRefresh = false) => {
     if (!forceRefresh) {
       const cached = cacheManager.get<T>(key, duration)
@@ -184,7 +187,7 @@ export function useCache<T>(
     if (autoRefresh) {
       fetch()
     }
-  }, [fetch, autoRefresh])
+  }, [fetch, autoRefresh, depsString])
 
   return {
     data,
