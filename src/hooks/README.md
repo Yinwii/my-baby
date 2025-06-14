@@ -15,6 +15,27 @@
 ✅ **事件驱动更新**：缓存变化时自动通知订阅者
 ✅ **更好的调试体验**：统一的缓存状态监控
 
+## 🆕 新增功能：宝宝头像
+
+### 功能特性
+- 🖼️ **头像上传**：支持上传宝宝专属头像
+- 🔄 **实时同步**：头像更新后自动同步到所有页面
+- 📱 **响应式显示**：头像在不同页面以合适尺寸显示
+- 🎨 **优雅降级**：未设置头像时显示性别对应的表情符号
+
+### 使用方法
+1. **进入宝宝信息页面**
+2. **点击"更换头像"按钮**
+3. **选择图片文件**（支持常见图片格式）
+4. **预览确认**后点击"更新头像"
+5. **头像立即在Dashboard等页面生效**
+
+### 技术实现
+- 利用现有的照片上传接口 `/api/photos/upload`
+- 数据库新增 `avatar` 字段存储头像URL
+- 缓存系统自动处理跨组件同步
+- Next.js Image组件优化图片加载
+
 ## 🚀 使用方法
 
 ### 1. 基本数据获取
@@ -57,8 +78,14 @@ const createRecord = async (data) => {
 
 ### 3. 现有hook的使用（已更新）
 ```typescript
-// useBaby
-const { baby, loading, error, refetch } = useBaby()
+// useBaby - 现已包含头像支持
+const { baby, loading, error, refetch, updateBaby } = useBaby()
+
+// 更新头像
+await updateBaby({
+  id: baby.id,
+  avatar: 'https://example.com/avatar.jpg'
+})
 
 // useGrowthRecords
 const { records, loading, error, refetch, createRecord } = useGrowthRecords(babyId)
@@ -87,9 +114,9 @@ invalidatePattern(/^growth-records-.*/)
 
 ### 批量失效
 ```typescript
-// 失效特定baby的所有数据
+// 失效特定baby的所有数据（包括头像）
 invalidateBabyData(babyId) // 会失效：
-// - baby-{babyId}
+// - baby-{babyId} (包含头像信息)
 // - growth-records-{babyId}
 // - milestones-{babyId}
 // - photos-{babyId}
@@ -131,22 +158,23 @@ const { clearInactiveCache } = useSmartPreloader(activeTab, loadedTabs)
 ### 2. 缓存时间策略
 - 频繁变化的数据：1-2分钟
 - 相对稳定的数据：5-10分钟
-- 静态数据：30分钟或更长
+- 静态数据（如头像）：30分钟或更长
 
 ### 3. 失效策略
 - 数据创建/更新/删除后立即失效相关缓存
+- 头像更新后自动失效baby缓存
 - 使用 `invalidateBabyData` 进行批量失效
 - 谨慎使用 `clearAll`，避免过度清除
 
 ### 4. 错误处理
 ```typescript
 try {
-  const result = await createRecord(data)
+  const result = await updateBaby({ id: baby.id, avatar: newAvatarUrl })
   // 成功后失效缓存
-  invalidate(cacheKey)
+  invalidate('baby')
 } catch (error) {
   // 错误处理，不要失效缓存
-  console.error('操作失败:', error)
+  console.error('头像更新失败:', error)
 }
 ```
 
@@ -160,12 +188,26 @@ try {
 
 ### 兼容性
 - 现有组件的API保持不变
+- 新增头像功能向后兼容
 - 逐步迁移，不需要一次性修改所有代码
 - 旧的缓存系统已被注释，可以逐步移除
 
 ## 📝 示例场景
 
-### 场景1：添加成长记录后Dashboard更新
+### 场景1：头像更新后跨页面同步
+```typescript
+// 在BabyInfo组件中
+const updateAvatar = async (avatarFile) => {
+  const uploadResult = await uploadToR2(avatarFile)
+  await updateBaby({
+    id: baby.id,
+    avatar: uploadResult.url
+  })
+  // Dashboard和其他页面的头像会自动更新
+}
+```
+
+### 场景2：添加成长记录后Dashboard更新
 ```typescript
 // 在GrowthRecords组件中
 const createRecord = async (data) => {
@@ -175,17 +217,17 @@ const createRecord = async (data) => {
 }
 ```
 
-### 场景2：多个页面显示相同数据
+### 场景3：多个页面显示相同数据
 ```typescript
 // 页面A和页面B都使用相同的数据
-const { baby } = useBaby() // 两个页面会自动同步baby数据的变化
+const { baby } = useBaby() // 两个页面会自动同步baby数据（包括头像）的变化
 ```
 
-### 场景3：性能优化的预加载
+### 场景4：性能优化的预加载
 ```typescript
 // 根据用户行为智能预加载
 const preloader = useSmartPreloader(activeTab, loadedTabs)
 // 当用户可能需要时才预加载相关数据
 ```
 
-这个统一的缓存管理系统解决了原有的跨组件数据同步问题，确保了数据的一致性和页面的实时更新。 
+这个统一的缓存管理系统解决了原有的跨组件数据同步问题，并新增了头像功能，确保了数据的一致性和页面的实时更新。 

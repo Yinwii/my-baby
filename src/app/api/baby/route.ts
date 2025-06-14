@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
         birthDate: new Date(data.birthDate),
         birthTime: data.birthTime,
         gender: data.gender,
+        avatar: data.avatar,
         birthWeight: data.birthWeight ? parseFloat(data.birthWeight) : null,
         birthHeight: data.birthHeight ? parseFloat(data.birthHeight) : null,
         birthHeadCircumference: data.birthHeadCircumference ? parseFloat(data.birthHeadCircumference) : null,
@@ -57,22 +58,53 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const data = await request.json()
-    const { id, ...updateData } = data
+    
+    if (!data.id) {
+      return NextResponse.json({ error: 'Baby ID is required' }, { status: 400 })
+    }
+
+    const updateData: Partial<{
+      name: string
+      birthDate: Date
+      birthTime: string
+      gender: string
+      avatar: string
+      birthWeight: number | null
+      birthHeight: number | null
+      birthHeadCircumference: number | null
+      bloodType: string
+      allergies: string
+      notes: string
+      updatedAt: Date
+    }> = {}
+    
+    // 只更新传入的字段
+    if (data.name !== undefined) updateData.name = data.name
+    if (data.birthDate !== undefined) updateData.birthDate = new Date(data.birthDate)
+    if (data.birthTime !== undefined) updateData.birthTime = data.birthTime
+    if (data.gender !== undefined) updateData.gender = data.gender
+    if (data.avatar !== undefined) updateData.avatar = data.avatar
+    if (data.birthWeight !== undefined) updateData.birthWeight = data.birthWeight ? parseFloat(data.birthWeight) : null
+    if (data.birthHeight !== undefined) updateData.birthHeight = data.birthHeight ? parseFloat(data.birthHeight) : null
+    if (data.birthHeadCircumference !== undefined) updateData.birthHeadCircumference = data.birthHeadCircumference ? parseFloat(data.birthHeadCircumference) : null
+    if (data.bloodType !== undefined) updateData.bloodType = data.bloodType
+    if (data.allergies !== undefined) updateData.allergies = data.allergies
+    if (data.notes !== undefined) updateData.notes = data.notes
+
+    updateData.updatedAt = new Date()
 
     const baby = await prisma.baby.update({
-      where: { id },
-      data: {
-        name: updateData.name,
-        birthDate: updateData.birthDate ? new Date(updateData.birthDate) : undefined,
-        birthTime: updateData.birthTime,
-        gender: updateData.gender,
-        birthWeight: updateData.birthWeight ? parseFloat(updateData.birthWeight) : null,
-        birthHeight: updateData.birthHeight ? parseFloat(updateData.birthHeight) : null,
-        birthHeadCircumference: updateData.birthHeadCircumference ? parseFloat(updateData.birthHeadCircumference) : null,
-        bloodType: updateData.bloodType,
-        allergies: updateData.allergies,
-        notes: updateData.notes,
-      },
+      where: { id: data.id },
+      data: updateData,
+      include: {
+        _count: {
+          select: {
+            growthRecords: true,
+            milestones: true,
+            mediaItems: true,
+          }
+        }
+      }
     })
 
     return NextResponse.json(baby)

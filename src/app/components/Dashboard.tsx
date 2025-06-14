@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useBaby } from '@/hooks/useBaby'
 import { useGrowthRecords } from '@/hooks/useGrowthRecords'
 import { useMilestones } from '@/hooks/useMilestones'
+import Image from 'next/image'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface DashboardProps {
@@ -113,8 +114,20 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <div className="card p-6 h-full bg-gradient-to-br from-pink-50 to-purple-50 border-2 border-pink-200 min-h-[140px]">
               <div className="flex items-center space-x-4 h-full">
-                <div className="w-20 h-20 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white text-3xl flex-shrink-0">
-                  {baby.gender === 'boy' ? '👦' : '👧'}
+                <div className="w-20 h-20 flex-shrink-0">
+                  {baby.avatar ? (
+                    <Image
+                      src={baby.avatar}
+                      alt="宝宝头像"
+                      width={80}
+                      height={80}
+                      className="w-20 h-20 rounded-full object-cover border-2 border-pink-300"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white text-3xl">
+                      {baby.gender === 'boy' ? '👦' : '👧'}
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h1 className="text-xl font-bold text-gray-800 truncate mb-1">{baby.name}</h1>

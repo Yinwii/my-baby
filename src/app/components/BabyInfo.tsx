@@ -2,15 +2,21 @@
 
 import { useState, useEffect } from 'react'
 import { useBaby } from '@/hooks/useBaby'
+import Image from 'next/image'
 
 export default function BabyInfo() {
   const { baby, loading, error, createBaby, updateBaby } = useBaby()
   const [isEditing, setIsEditing] = useState(false)
+  const [showAvatarUpload, setShowAvatarUpload] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null)
+  
   const [babyInfo, setBabyInfo] = useState({
     name: '',
+    gender: 'boy',
     birthDate: '',
     birthTime: '',
-    gender: 'boy',
+    avatar: '',
     birthWeight: '',
     birthHeight: '',
     birthHeadCircumference: '',
@@ -23,9 +29,10 @@ export default function BabyInfo() {
     if (baby) {
       setBabyInfo({
         name: baby.name || '',
+        gender: baby.gender || 'boy',
         birthDate: baby.birthDate ? baby.birthDate.split('T')[0] : '',
         birthTime: baby.birthTime || '',
-        gender: baby.gender || 'boy',
+        avatar: baby.avatar || '',
         birthWeight: baby.birthWeight?.toString() || '',
         birthHeight: baby.birthHeight?.toString() || '',
         birthHeadCircumference: baby.birthHeadCircumference?.toString() || '',
@@ -38,6 +45,43 @@ export default function BabyInfo() {
       setIsEditing(true)
     }
   }, [baby, loading])
+
+  const handleAvatarUpload = async () => {
+    if (!selectedAvatarFile || !baby?.id) return
+
+    setUploadingAvatar(true)
+    try {
+      // 上传头像文件
+      const formData = new FormData()
+      formData.append('file', selectedAvatarFile)
+
+      const uploadResponse = await fetch('/api/photos/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error('头像上传失败')
+      }
+
+      const uploadResult = await uploadResponse.json()
+      
+      // 更新宝宝信息中的头像URL
+      await updateBaby({
+        id: baby.id,
+        avatar: uploadResult.url
+      })
+
+      setShowAvatarUpload(false)
+      setSelectedAvatarFile(null)
+      alert('头像更新成功！')
+    } catch (error) {
+      console.error('Avatar upload error:', error)
+      alert('头像上传失败，请重试')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
 
   const handleSave = async () => {
     try {
@@ -101,6 +145,120 @@ export default function BabyInfo() {
         <h2 className="text-3xl font-bold text-gray-800 mb-2">宝宝信息</h2>
         <p className="text-gray-600">管理宝宝的基本信息</p>
       </div>
+
+      <div className="card">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-gray-800">头像</h3>
+          <button
+            onClick={() => setShowAvatarUpload(true)}
+            className="btn-secondary"
+          >
+            更换头像
+          </button>
+        </div>
+
+        <div className="flex justify-center">
+          <div className="relative w-32 h-32">
+            {babyInfo.avatar ? (
+              <Image
+                src={babyInfo.avatar}
+                alt="宝宝头像"
+                width={128}
+                height={128}
+                className="w-32 h-32 rounded-full object-cover border-4 border-pink-200"
+              />
+            ) : (
+              <div className="w-32 h-32 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white text-5xl border-4 border-pink-200">
+                {babyInfo.gender === 'boy' ? '👦' : '👧'}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {showAvatarUpload && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">更换头像</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  选择头像图片
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    id="avatar-upload"
+                    onChange={(e) => setSelectedAvatarFile(e.target.files ? e.target.files[0] : null)}
+                    disabled={uploadingAvatar}
+                  />
+                  {!selectedAvatarFile ? (
+                    <>
+                      <div className="text-4xl mb-2">👶</div>
+                      <p className="text-gray-600 mb-2">点击选择头像图片</p>
+                      <label
+                        htmlFor="avatar-upload"
+                        className={`btn-secondary cursor-pointer inline-block ${uploadingAvatar ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        选择图片
+                      </label>
+                    </>
+                  ) : (
+                    <div className="text-left">
+                      <p className="text-sm text-gray-700">已选择文件:</p>
+                      <p className="font-medium text-gray-900 truncate">{selectedAvatarFile.name}</p>
+                      <p className="text-xs text-gray-500">大小: {(selectedAvatarFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                      <button
+                        onClick={() => setSelectedAvatarFile(null)}
+                        className="text-xs text-red-500 hover:text-red-700 mt-1"
+                        disabled={uploadingAvatar}
+                      >
+                        清除选择
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {selectedAvatarFile && (
+                <div className="flex justify-center">
+                  <Image
+                    src={URL.createObjectURL(selectedAvatarFile)}
+                    alt="预览"
+                    width={96}
+                    height={96}
+                    className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={handleAvatarUpload}
+                className="btn-primary flex-1"
+                disabled={uploadingAvatar || !selectedAvatarFile}
+              >
+                {uploadingAvatar ? '上传中...' : '更新头像'}
+              </button>
+              <button
+                onClick={() => {
+                  if (uploadingAvatar) return
+                  setShowAvatarUpload(false)
+                  setSelectedAvatarFile(null)
+                }}
+                className={`btn-secondary flex-1 ${uploadingAvatar ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={uploadingAvatar}
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div className="flex justify-between items-center mb-6">

@@ -11,6 +11,7 @@ interface Baby {
   birthDate: string
   birthTime?: string
   gender: string
+  avatar?: string // 头像URL
   birthWeight?: number
   birthHeight?: number
   birthHeadCircumference?: number

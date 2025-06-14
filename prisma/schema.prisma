@@ -19,6 +19,7 @@ model Baby {
   birthDate               DateTime
   birthTime               String?
   gender                  String   // 'boy' or 'girl'
+  avatar                  String?  // 头像URL
   birthWeight             Float?
   birthHeight             Float?
   birthHeadCircumference  Float?
