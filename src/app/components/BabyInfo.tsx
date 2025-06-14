@@ -10,6 +10,7 @@ export default function BabyInfo() {
   const [showAvatarUpload, setShowAvatarUpload] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null)
+  const [isAvatarOperation, setIsAvatarOperation] = useState(false)
   
   const [babyInfo, setBabyInfo] = useState({
     name: '',
@@ -40,18 +41,20 @@ export default function BabyInfo() {
         allergies: baby.allergies || '',
         notes: baby.notes || ''
       })
-    } else if (!loading && !baby) {
-      // No baby exists, enable editing mode to create one
+      if (isAvatarOperation) {
+        setIsAvatarOperation(false)
+      }
+    } else if (!loading && !baby && !isAvatarOperation) {
       setIsEditing(true)
     }
-  }, [baby, loading])
+  }, [baby, loading, isAvatarOperation])
 
   const handleAvatarUpload = async () => {
     if (!selectedAvatarFile || !baby?.id) return
 
     setUploadingAvatar(true)
+    setIsAvatarOperation(true)
     try {
-      // 上传头像文件
       const formData = new FormData()
       formData.append('file', selectedAvatarFile)
 
@@ -66,7 +69,6 @@ export default function BabyInfo() {
 
       const uploadResult = await uploadResponse.json()
       
-      // 更新宝宝信息中的头像URL
       await updateBaby({
         id: baby.id,
         avatar: uploadResult.url
@@ -80,13 +82,15 @@ export default function BabyInfo() {
       alert('头像上传失败，请重试')
     } finally {
       setUploadingAvatar(false)
+      setTimeout(() => {
+        setIsAvatarOperation(false)
+      }, 1000)
     }
   }
 
   const handleSave = async () => {
     try {
       if (baby) {
-        // Update existing baby
         await updateBaby({
           id: baby.id,
           ...babyInfo,
@@ -95,7 +99,6 @@ export default function BabyInfo() {
           birthHeadCircumference: babyInfo.birthHeadCircumference ? parseFloat(babyInfo.birthHeadCircumference) : undefined,
         })
       } else {
-        // Create new baby
         await createBaby({
           ...babyInfo,
           birthWeight: babyInfo.birthWeight ? parseFloat(babyInfo.birthWeight) : undefined,
@@ -149,12 +152,15 @@ export default function BabyInfo() {
       <div className="card">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-gray-800">头像</h3>
-          <button
-            onClick={() => setShowAvatarUpload(true)}
-            className="btn-secondary"
-          >
-            更换头像
-          </button>
+          {baby && (
+            <button
+              onClick={() => setShowAvatarUpload(true)}
+              className="btn-secondary"
+              disabled={uploadingAvatar || isAvatarOperation}
+            >
+              {uploadingAvatar ? '上传中...' : '更换头像'}
+            </button>
+          )}
         </div>
 
         <div className="flex justify-center">
@@ -266,6 +272,7 @@ export default function BabyInfo() {
           <button
             onClick={() => isEditing ? handleSave() : setIsEditing(true)}
             className={isEditing ? 'btn-primary' : 'btn-secondary'}
+            disabled={isAvatarOperation}
           >
             {isEditing ? '保存' : '编辑'}
           </button>

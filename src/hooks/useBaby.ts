@@ -100,8 +100,13 @@ export function useBaby() {
       // 使用新的缓存失效机制
       invalidateBabyData(babyData.id)
       
-      // 立即刷新缓存
-      await refetch(true)
+      // 立即刷新缓存，但如果失败不要影响现有数据
+      try {
+        await refetch(true)
+      } catch (refetchError) {
+        console.warn('Failed to refetch baby data after update, but update was successful:', refetchError)
+        // 不抛出错误，因为更新操作本身是成功的
+      }
       return data
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred'
