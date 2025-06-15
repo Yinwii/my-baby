@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { useBaby } from '@/hooks/useBaby'
+import { useToastContext } from '@/components/providers/ToastProvider'
 
 interface MediaItem { // Renamed from Photo
   id: string;
@@ -37,6 +38,7 @@ const formatDateDisplay = (dateString: string): string => {
 
 export default function PhotoGallery() { // Consider renaming to MediaGallery later if desired
   const { baby, loading, error } = useBaby()
+  const toast = useToastContext()
   
   // Debug logging
   console.log('PhotoGallery - baby:', baby)
@@ -131,14 +133,14 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     if (!selectedFile) {
       const error = '请选择一个文件进行上传。'
       console.error('Validation error:', error)
-      alert(error)
+      toast.error('上传失败', error)
       setUploadError(error)
       return;
     }
     if (!newMediaItemData.title) {
       const error = '请填写标题。'
       console.error('Validation error:', error)
-      alert(error)
+      toast.error('验证失败', error)
       setUploadError(error)
       return;
     }
@@ -146,7 +148,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     if (!baby?.id) {
       const error = '请先创建宝宝信息。'
       console.error('Validation error:', error)
-      alert(error)
+      toast.error('验证失败', error)
       setUploadError(error)
       return;
     }
@@ -266,13 +268,14 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
       setNewMediaItemData({ date: new Date().toISOString().split('T')[0], title: '', description: '' }); // Reset form
       setSelectedFile(null); // Clear selected file
       setShowUploadForm(false); // Close modal
-      alert('文件上传成功！'); // Updated message
+      toast.success('上传成功', '文件已成功上传并保存')
 
     } catch (error) {
       console.error('Upload failed:', error);
       const errorMessage = error instanceof Error ? error.message : '发生未知错误。';
       console.error('Error message:', errorMessage)
       setUploadError(errorMessage);
+      toast.error('上传失败', errorMessage)
     } finally {
       setIsUploading(false);
     }
@@ -304,7 +307,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
         if (selectedMediaItem?.id === mediaItemId) {
           setSelectedMediaItem(null);
         }
-        alert('媒体文件删除成功！');
+        toast.success('删除成功', '媒体文件已成功删除')
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || '删除失败');
@@ -312,7 +315,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     } catch (error) {
       console.error('Delete failed:', error);
       const errorMessage = error instanceof Error ? error.message : '删除过程中发生未知错误';
-      alert(`删除失败: ${errorMessage}`);
+      toast.error('删除失败', errorMessage)
     }
   };
 

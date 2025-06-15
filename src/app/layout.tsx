@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { ToastProvider } from '@/components/providers/ToastProvider'
 
 export const metadata: Metadata = {
   title: '小好小宇宙',
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className="min-h-screen bg-gradient-to-br from-pink-50 to-blue-50">
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   )

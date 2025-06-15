@@ -9,6 +9,7 @@ import Milestones from './components/Milestones'
 import PhotoGallery from './components/PhotoGallery'
 import { useBaby } from '@/hooks/useBaby'
 import { useDashboardPreloader, useSmartPreloader } from '@/hooks/useDataPreloader'
+import ToastDemo from './components/ToastDemo'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -80,6 +81,19 @@ export default function Home() {
         <div className={activeTab === 'photos' ? 'block' : 'hidden'}>
           {loadedTabs.has('photos') && <PhotoGallery />}
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <BabyInfo />
+          <GrowthRecord />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Milestones />
+          <PhotoGallery />
+        </div>
+        
+        {/* Toast演示 - 仅用于测试 */}
+        <ToastDemo />
       </main>
     </div>
   )
