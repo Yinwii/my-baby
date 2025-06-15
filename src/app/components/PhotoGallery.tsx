@@ -167,15 +167,36 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
 
       console.log('Upload response status:', uploadResponse.status)
       console.log('Upload response ok:', uploadResponse.ok)
+      console.log('Upload response headers:', Object.fromEntries(uploadResponse.headers.entries()))
 
       if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json();
+        let errorData;
+        const responseText = await uploadResponse.text();
+        console.log('Upload error response text:', responseText);
+        
+        try {
+          errorData = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('Failed to parse error response as JSON:', parseError);
+          throw new Error(`上传文件失败 (HTTP ${uploadResponse.status}): ${responseText || '服务器无响应'}`);
+        }
+        
         console.error('Upload error data:', errorData)
         throw new Error(errorData.error || `上传文件失败 (HTTP ${uploadResponse.status})`); // Updated message
       }
 
       // uploadResult now contains: { url, mediaType, format, thumbnailUrl, duration }
-      const uploadResult = await uploadResponse.json();
+      let uploadResult;
+      const uploadResponseText = await uploadResponse.text();
+      console.log('Upload success response text:', uploadResponseText);
+      
+      try {
+        uploadResult = JSON.parse(uploadResponseText);
+      } catch (parseError) {
+        console.error('Failed to parse upload success response as JSON:', parseError);
+        throw new Error('服务器响应格式错误，但文件可能已上传成功');
+      }
+      
       console.log('Upload result:', uploadResult)
 
       console.log('Step 2: Saving to database...')
@@ -202,15 +223,36 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
 
       console.log('Save response status:', saveMediaResponse.status)
       console.log('Save response ok:', saveMediaResponse.ok)
+      console.log('Save response headers:', Object.fromEntries(saveMediaResponse.headers.entries()))
 
       if (!saveMediaResponse.ok) {
-        const errorData = await saveMediaResponse.json();
+        let errorData;
+        const responseText = await saveMediaResponse.text();
+        console.log('Save error response text:', responseText);
+        
+        try {
+          errorData = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('Failed to parse save error response as JSON:', parseError);
+          throw new Error(`保存媒体信息失败 (HTTP ${saveMediaResponse.status}): ${responseText || '服务器无响应'}`);
+        }
+        
         console.error('Save error data:', errorData)
         throw new Error(errorData.error || `保存媒体信息失败 (HTTP ${saveMediaResponse.status})`); // Updated message
       }
 
       // savedMediaItem will include all fields, including id, createdAt, updatedAt from the DB
-      const savedMediaItemWithId = await saveMediaResponse.json();
+      let savedMediaItemWithId;
+      const saveResponseText = await saveMediaResponse.text();
+      console.log('Save success response text:', saveResponseText);
+      
+      try {
+        savedMediaItemWithId = JSON.parse(saveResponseText);
+      } catch (parseError) {
+        console.error('Failed to parse save success response as JSON:', parseError);
+        throw new Error('数据保存格式错误，但媒体文件可能已成功上传');
+      }
+      
       console.log('Saved media item:', savedMediaItemWithId)
 
       // Update UI

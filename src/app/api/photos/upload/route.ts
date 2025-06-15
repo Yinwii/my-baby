@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     let convertedFormat: string | undefined = originalFormat;
     let videoDuration: number | null = null;
     let uploadedThumbnailUrl: string | null = null;
-    const baseUniqueName = uuidv4(); // Used for main file and thumbnail to link them
+    const baseUniqueName = uuidv4();
 
     if (determinedMediaType === 'IMAGE') {
       const imageBuffer = Buffer.from(await file.arrayBuffer());
