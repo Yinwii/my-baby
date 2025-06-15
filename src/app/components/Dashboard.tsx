@@ -176,6 +176,12 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-2">里程碑数</h3>
               <p className="text-base font-bold text-gray-800">{milestones?.length || 0} 个</p>
+              <button 
+                onClick={() => setActiveTab('milestones')}
+                className="text-xs text-orange-600 hover:text-orange-800 font-medium mt-1"
+              >
+                查看里程碑 →
+              </button>
             </div>
           </div>
 
