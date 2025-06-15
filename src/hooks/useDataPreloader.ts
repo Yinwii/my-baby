@@ -100,7 +100,7 @@ export function useDataPreloader(options: PreloadOptions = {}) {
 // 专门为首页Dashboard设计的预加载hook
 export function useDashboardPreloader() {
   return useDataPreloader({
-    enabledTabs: ['growth', 'milestones'], // 不预加载photos，因为数据量可能很大
+    enabledTabs: ['growth', 'milestones', 'photos'], // 预加载photos
     delay: 1500, // Dashboard渲染完成后1.5秒开始预加载
     priority: 'idle',
   })
