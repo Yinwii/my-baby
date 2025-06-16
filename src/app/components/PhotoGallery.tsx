@@ -201,9 +201,6 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
       const r2UploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         body: selectedFile,
-        headers: {
-          'Content-Type': selectedFile!.type,
-        },
       });
 
       if (!r2UploadResponse.ok) {
