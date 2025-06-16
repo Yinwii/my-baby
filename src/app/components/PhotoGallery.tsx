@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react' // Added useRef
 import Image from 'next/image'
 import { useBaby } from '@/hooks/useBaby'
 import { useToastContext } from '@/components/providers/ToastProvider'
@@ -39,6 +39,9 @@ const formatDateDisplay = (dateString: string): string => {
 export default function PhotoGallery() { // Consider renaming to MediaGallery later if desired
   const { baby, loading, error } = useBaby()
   const toast = useToastContext()
+  const fileInputRef = useRef<HTMLInputElement>(null); // Ref for file input
+
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
   
   // Debug logging
   console.log('PhotoGallery - baby:', baby)
@@ -125,6 +128,19 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
 
   // Renamed from handleUploadPhoto to handleUploadMediaItem
   const handleUploadMediaItem = async () => {
+    if (selectedFile && selectedFile.size > MAX_FILE_SIZE) {
+      const errorMsg = `文件大小不能超过 ${MAX_FILE_SIZE / (1024 * 1024)}MB。`;
+      console.error('Validation error:', errorMsg)
+      toast.error('上传失败', errorMsg)
+      setUploadError(errorMsg)
+      // Clear the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      setSelectedFile(null);
+      return;
+    }
+
     console.log('Starting upload process...')
     console.log('Baby:', baby)
     console.log('Selected file:', selectedFile)
@@ -157,121 +173,104 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     setUploadError(null);
 
     try {
-      console.log('Step 1: Uploading file to R2...')
-      // 1. Upload file to R2 via /api/photos/upload endpoint
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
-      const uploadResponse = await fetch('/api/photos/upload', { // Endpoint remains the same
+      // Step 1: Get pre-signed URL from our new API route
+      console.log('Step 1: Getting pre-signed URL...');
+      const presignedUrlResponse = await fetch('/api/photos/generate-upload-url', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          filename: selectedFile!.name, // selectedFile is guaranteed to be non-null here
+          contentType: selectedFile!.type,
+        }),
       });
 
-      console.log('Upload response status:', uploadResponse.status)
-      console.log('Upload response ok:', uploadResponse.ok)
-      console.log('Upload response headers:', Object.fromEntries(uploadResponse.headers.entries()))
-
-      if (!uploadResponse.ok) {
-        let errorData;
-        const responseText = await uploadResponse.text();
-        console.log('Upload error response text:', responseText);
-        
-        try {
-          errorData = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error('Failed to parse error response as JSON:', parseError);
-          throw new Error(`上传文件失败 (HTTP ${uploadResponse.status}): ${responseText || '服务器无响应'}`);
-        }
-        
-        console.error('Upload error data:', errorData)
-        throw new Error(errorData.error || `上传文件失败 (HTTP ${uploadResponse.status})`); // Updated message
+      if (!presignedUrlResponse.ok) {
+        const errorData = await presignedUrlResponse.json();
+        throw new Error(errorData.error || `获取上传授权失败 (HTTP ${presignedUrlResponse.status})`);
       }
 
-      // uploadResult now contains: { url, mediaType, format, thumbnailUrl, duration }
-      let uploadResult;
-      const uploadResponseText = await uploadResponse.text();
-      console.log('Upload success response text:', uploadResponseText);
-      
-      try {
-        uploadResult = JSON.parse(uploadResponseText);
-      } catch (parseError) {
-        console.error('Failed to parse upload success response as JSON:', parseError);
-        throw new Error('服务器响应格式错误，但文件可能已上传成功');
-      }
-      
-      console.log('Upload result:', uploadResult)
+      const { uploadUrl, key: r2ObjectKey, publicUrl: r2PublicUrl } = await presignedUrlResponse.json();
+      console.log('Received pre-signed URL:', uploadUrl);
+      console.log('R2 Object Key:', r2ObjectKey);
+      console.log('R2 Public URL:', r2PublicUrl);
 
-      console.log('Step 2: Saving to database...')
-      // 2. Save media item metadata (including R2 URL and other details) to database via /api/photos
+      // Step 2: Upload the file directly to R2 using the pre-signed URL
+      console.log('Step 2: Uploading file to R2...');
+      const r2UploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: selectedFile,
+        headers: {
+          'Content-Type': selectedFile!.type,
+        },
+      });
+
+      if (!r2UploadResponse.ok) {
+        // Attempt to get error details from R2, though it might be opaque
+        const r2ErrorText = await r2UploadResponse.text();
+        console.error('R2 Upload Error Response Text:', r2ErrorText);
+        throw new Error(`上传文件到存储服务失败 (HTTP ${r2UploadResponse.status}). ${r2ErrorText ? 'Details: '+r2ErrorText.substring(0,100) : ''}`);
+      }
+
+      console.log('File uploaded to R2 successfully!');
+
+      // Step 3: Save media item metadata to our database (this part will be fully implemented later)
+      // For now, we'll log the data that would be sent.
+      // The actual /api/photos POST request will need to be updated to handle new fields if necessary (e.g. no thumbnailUrl, duration yet)
+      // and it might not return the full media item with ID immediately if thumbnail/duration processing is async.
+
       const mediaDataForDb = {
-        babyId: baby.id, // Use actual baby ID
-        date: newMediaItemData.date, // Updated state name
-        title: newMediaItemData.title, // Updated state name
-        description: newMediaItemData.description || null, // Updated state name
-        url: uploadResult.url,
-        mediaType: uploadResult.mediaType,
-        format: uploadResult.format,
-        thumbnailUrl: uploadResult.thumbnailUrl,
-        duration: uploadResult.duration,
+        babyId: baby!.id, // baby is guaranteed to be non-null here
+        date: newMediaItemData.date,
+        title: newMediaItemData.title,
+        description: newMediaItemData.description || null,
+        url: r2PublicUrl, // This is the final public URL from R2
+        mediaType: selectedFile!.type.startsWith('image/') ? 'IMAGE' : 'VIDEO',
+        format: selectedFile!.type.split('/')[1] || selectedFile!.type, // Fallback to full type if split fails
+        thumbnailUrl: null, // Simplified handling, no client-side thumbnail generation
+        duration: null,     // Simplified handling, no client-side duration extraction
       };
 
-      console.log('Data to save to DB:', mediaDataForDb)
+      console.log('Step 3: Saving media metadata to database...', mediaDataForDb);
 
-      const saveMediaResponse = await fetch('/api/photos', { // Endpoint remains the same
+      const saveMediaResponse = await fetch('/api/photos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mediaDataForDb),
       });
 
-      console.log('Save response status:', saveMediaResponse.status)
-      console.log('Save response ok:', saveMediaResponse.ok)
-      console.log('Save response headers:', Object.fromEntries(saveMediaResponse.headers.entries()))
-
       if (!saveMediaResponse.ok) {
-        let errorData;
-        const responseText = await saveMediaResponse.text();
-        console.log('Save error response text:', responseText);
-        
-        try {
-          errorData = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error('Failed to parse save error response as JSON:', parseError);
-          throw new Error(`保存媒体信息失败 (HTTP ${saveMediaResponse.status}): ${responseText || '服务器无响应'}`);
-        }
-        
-        console.error('Save error data:', errorData)
-        throw new Error(errorData.error || `保存媒体信息失败 (HTTP ${saveMediaResponse.status})`); // Updated message
+        const errorData = await saveMediaResponse.json();
+        throw new Error(errorData.error || `保存媒体信息失败 (HTTP ${saveMediaResponse.status})`);
       }
 
-      // savedMediaItem will include all fields, including id, createdAt, updatedAt from the DB
-      let savedMediaItemWithId;
-      const saveResponseText = await saveMediaResponse.text();
-      console.log('Save success response text:', saveResponseText);
-      
-      try {
-        savedMediaItemWithId = JSON.parse(saveResponseText);
-      } catch (parseError) {
-        console.error('Failed to parse save success response as JSON:', parseError);
-        throw new Error('数据保存格式错误，但媒体文件可能已成功上传');
-      }
-      
-      console.log('Saved media item:', savedMediaItemWithId)
+      const savedMediaItemWithId = await saveMediaResponse.json();
+      console.log('Saved media item:', savedMediaItemWithId);
 
       // Update UI
-      const finalMediaItemObject: MediaItem = { // Ensure type is MediaItem
-        ...savedMediaItemWithId,
-        age: calculateAge(savedMediaItemWithId.date) // Calculate age client-side
+      const finalMediaItemObject: MediaItem = {
+        ...savedMediaItemWithId, // This should include id, url, title, date, etc. from DB
+        age: calculateAge(savedMediaItemWithId.date), // Calculate age client-side
+        // Ensure mediaType and format from DB are used, or fall back if not present in savedMediaItemWithId
+        mediaType: savedMediaItemWithId.mediaType || mediaDataForDb.mediaType,
+        format: savedMediaItemWithId.format || mediaDataForDb.format,
+        thumbnailUrl: savedMediaItemWithId.thumbnailUrl, // Will be null for now
+        duration: savedMediaItemWithId.duration,       // Will be null for now
       };
 
-      setMediaItems(prev => [finalMediaItemObject, ...prev]); // Renamed state setter
+      setMediaItems(prev => [finalMediaItemObject, ...prev]);
 
-      setNewMediaItemData({ date: new Date().toISOString().split('T')[0], title: '', description: '' }); // Reset form
-      setSelectedFile(null); // Clear selected file
-      setShowUploadForm(false); // Close modal
-      toast.success('上传成功', '文件已成功上传并保存')
+      toast.success('上传成功', '文件已成功上传并保存媒体信息！');
+      setNewMediaItemData({ date: new Date().toISOString().split('T')[0], title: '', description: '' });
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      setShowUploadForm(false);
 
     } catch (error) {
-      console.error('Upload failed:', error);
+      console.error('Upload process failed:', error);
       const errorMessage = error instanceof Error ? error.message : '发生未知错误。';
       console.error('Error message:', errorMessage)
       setUploadError(errorMessage);
@@ -405,7 +404,27 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
                     accept="image/*,video/*" // Updated accept attribute
                     className="hidden"
                     id="media-upload" // Changed id for clarity
-                    onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)}
+                    ref={fileInputRef} // Added ref
+                    onChange={(e) => {
+                      const file = e.target.files ? e.target.files[0] : null;
+                      if (file) {
+                        if (file.size > MAX_FILE_SIZE) {
+                          const errorMsg = `文件 "${file.name}" 太大了。请选择小于 ${MAX_FILE_SIZE / (1024 * 1024)}MB 的文件。`;
+                          toast.error('文件过大', errorMsg);
+                          setUploadError(errorMsg);
+                          // Clear the file input
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = "";
+                          }
+                          setSelectedFile(null);
+                        } else {
+                          setSelectedFile(file);
+                          setUploadError(null); // Clear previous error
+                        }
+                      } else {
+                        setSelectedFile(null);
+                      }
+                    }}
                     disabled={isUploading}
                   />
                   {!selectedFile ? (
@@ -637,7 +656,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
                     ) : item.mediaType === 'VIDEO' ? (
                       <>
                         <Image
-                          src={item.thumbnailUrl || '/placeholder-video-thumb.jpg'} // Fallback thumbnail
+                          src={item.thumbnailUrl || '/placeholder-video-thumb.svg'} // Fallback thumbnail
                           alt={item.title + " thumbnail"}
                           className="w-full h-full object-cover"
                           width={500}
