@@ -14,7 +14,7 @@ const s3Client = new S3Client({
 });
 
 const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
-const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
+const R2_PUBLIC_DOMAIN = process.env.R2_PUBLIC_DOMAIN;
 
 
 export async function POST(request: NextRequest) {
@@ -22,8 +22,8 @@ export async function POST(request: NextRequest) {
     console.error('R2_BUCKET_NAME is not set');
     return NextResponse.json({ error: 'Server configuration error: Bucket name missing' }, { status: 500 });
   }
-  if (!R2_PUBLIC_URL) {
-    console.error('R2_PUBLIC_URL is not set');
+  if (!R2_PUBLIC_DOMAIN) {
+    console.error('R2_PUBLIC_DOMAIN is not set');
     return NextResponse.json({ error: 'Server configuration error: Public URL missing' }, { status: 500 });
   }
 
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // Expires in 1 hour
 
     // Construct the public URL after upload
-    const publicUrl = `${R2_PUBLIC_URL}/${uniqueKey}`;
+    const publicUrl = `${R2_PUBLIC_DOMAIN}/${uniqueKey}`;
 
     return NextResponse.json({
       success: true,
