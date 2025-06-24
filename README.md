@@ -25,7 +25,6 @@
 ### 💾 数据持久化
 - **PostgreSQL 数据库**：使用 Neon 云数据库服务
 - **Prisma ORM**：类型安全的数据库操作
-- **数据备份**：支持数据导入导出
 
 ## 🔧 技术栈
 - **前端框架**：Next.js 15 + React 19
@@ -50,7 +49,7 @@
 
 ### 1. 克隆项目
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/zhajiahe/my-baby.git
 cd my-baby
 ```
 
