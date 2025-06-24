@@ -154,6 +154,12 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-2">当前体重</h3>
               <p className="text-base font-bold text-gray-800">{latestRecord?.weight ? `${latestRecord.weight} kg` : '暂无数据'}</p>
+              <button 
+                onClick={() => setActiveTab('growth')}
+                className="text-xs text-orange-600 hover:text-orange-800 font-medium mt-1"
+              >
+                查看成长记录 →
+              </button>
             </div>
           </div>
 
@@ -165,6 +171,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-2">当前身高</h3>
               <p className="text-base font-bold text-gray-800">{latestRecord?.height ? `${latestRecord.height} cm` : '暂无数据'}</p>
+              
             </div>
           </div>
 
