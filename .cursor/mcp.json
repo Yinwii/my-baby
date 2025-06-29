@@ -1,17 +1,5 @@
 {
     "mcpServers": {
-      "mcp-feedback-enhanced": {
-        "command": "uvx",
-        "args": ["-i", "https://pypi.tuna.tsinghua.edu.cn/simple", "mcp-feedback-enhanced@latest"],
-        "timeout": 6000,
-        "autoApprove": ["interactive_feedback"]
-        },
-      "sequential-thinking": {
-        "command": "npx",
-        "args": [
-          "-y",
-          "@modelcontextprotocol/server-sequential-thinking"
-        ]
-      }
+      
     }
   }

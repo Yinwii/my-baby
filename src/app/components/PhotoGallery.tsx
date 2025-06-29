@@ -61,6 +61,21 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
     description: ''
   });
 
+  // 新增：编辑功能状态
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    description: ''
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  // 新增：图片尺寸状态，用于自适应大小
+  const [imageDimensions, setImageDimensions] = useState<{
+    width: number;
+    height: number;
+    aspectRatio: number;
+  } | null>(null);
+
   const calculateAge = useCallback((date: string) => {
     if (!baby?.birthDate) return '未知'
     
@@ -125,6 +140,122 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
       })
     }
   }, [baby?.birthDate, calculateAge])
+
+  // 新增：处理图片加载以获取自然尺寸
+  const handleImageLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = event.currentTarget;
+    const aspectRatio = img.naturalWidth / img.naturalHeight;
+    setImageDimensions({
+      width: img.naturalWidth,
+      height: img.naturalHeight,
+      aspectRatio
+    });
+  };
+
+  // 新增：计算自适应容器样式
+  const getContainerStyle = () => {
+    if (!imageDimensions) {
+      return { maxWidth: '100%', maxHeight: '70vh', aspectRatio: '16/9' }; // 默认值
+    }
+    
+    const maxWidth = typeof window !== 'undefined' ? window.innerWidth * 0.8 : 800;
+    const maxHeight = typeof window !== 'undefined' ? window.innerHeight * 0.7 : 600;
+    const { aspectRatio } = imageDimensions;
+    
+    let width, height;
+    
+    if (aspectRatio > 1) {
+      // 横图：以宽度为基准
+      width = Math.min(maxWidth, 800);
+      height = width / aspectRatio;
+      if (height > maxHeight) {
+        height = maxHeight;
+        width = height * aspectRatio;
+      }
+    } else {
+      // 竖图：以高度为基准
+      height = Math.min(maxHeight, 600);
+      width = height * aspectRatio;
+      if (width > maxWidth) {
+        width = maxWidth;
+        height = width / aspectRatio;
+      }
+    }
+    
+    return {
+      width: `${width}px`,
+      height: `${height}px`,
+      maxWidth: '90vw',
+      maxHeight: '80vh'
+    };
+  };
+
+  // 新增：开始编辑
+  const handleStartEdit = () => {
+    if (!selectedMediaItem) return;
+    setEditFormData({
+      title: selectedMediaItem.title,
+      description: selectedMediaItem.description || ''
+    });
+    setIsEditing(true);
+  };
+
+  // 新增：取消编辑
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditFormData({ title: '', description: '' });
+  };
+
+  // 新增：保存编辑
+  const handleSaveEdit = async () => {
+    if (!selectedMediaItem) return;
+    
+    if (!editFormData.title.trim()) {
+      toast.error('验证失败', '标题不能为空');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/photos/${selectedMediaItem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editFormData.title.trim(),
+          description: editFormData.description.trim() || null
+        })
+      });
+      
+      if (response.ok) {
+        const updatedItem = await response.json();
+        
+        // 更新本地状态
+        setMediaItems(prev => prev.map(item => 
+          item.id === selectedMediaItem.id 
+            ? { ...item, title: updatedItem.title, description: updatedItem.description }
+            : item
+        ));
+        
+        setSelectedMediaItem(prev => prev ? { 
+          ...prev, 
+          title: updatedItem.title, 
+          description: updatedItem.description 
+        } : null);
+        
+        setIsEditing(false);
+        toast.success('保存成功', '媒体信息已更新');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '保存失败');
+      }
+    } catch (error) {
+      console.error('Edit failed:', error);
+      const errorMessage = error instanceof Error ? error.message : '保存过程中发生未知错误';
+      toast.error('保存失败', errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Renamed from handleUploadPhoto to handleUploadMediaItem
   const handleUploadMediaItem = async () => {
@@ -299,9 +430,11 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
       if (response.ok) {
         // Remove the item from local state
         setMediaItems(prev => prev.filter(item => item.id !== mediaItemId));
-        // Close the modal if this item was selected
+        // Close the modal if this item was selected and reset all states
         if (selectedMediaItem?.id === mediaItemId) {
           setSelectedMediaItem(null);
+          setIsEditing(false);
+          setImageDimensions(null);
         }
         toast.success('删除成功', '媒体文件已成功删除')
       } else {
@@ -520,20 +653,66 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
       {/* Media Item Detail Modal */}
       {selectedMediaItem && ( // Renamed from selectedPhoto
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-gray-800">{selectedMediaItem.title}</h3>
+                {!isEditing ? (
+                  <h3 className="text-xl font-bold text-gray-800">{selectedMediaItem.title}</h3>
+                ) : (
+                  <div className="flex-1 mr-4">
+                    <input
+                      type="text"
+                      value={editFormData.title}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, title: e.target.value }))}
+                      className="text-xl font-bold text-gray-800 w-full border-b-2 border-blue-300 focus:border-blue-500 outline-none bg-transparent"
+                      placeholder="输入标题..."
+                    />
+                  </div>
+                )}
                 <div className="flex items-center space-x-2">
+                  {!isEditing ? (
+                    <>
+                      <button
+                        onClick={handleStartEdit}
+                        className="text-blue-500 hover:text-blue-700 text-sm px-3 py-1 border border-blue-300 rounded hover:bg-blue-50 transition-colors"
+                        title="编辑媒体信息"
+                      >
+                        ✏️ 编辑
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMediaItem(selectedMediaItem.id)}
+                        className="text-red-500 hover:text-red-700 text-sm px-3 py-1 border border-red-300 rounded hover:bg-red-50 transition-colors"
+                        title="删除媒体文件"
+                      >
+                        🗑️ 删除
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleSaveEdit}
+                        disabled={isSaving}
+                        className="text-green-500 hover:text-green-700 text-sm px-3 py-1 border border-green-300 rounded hover:bg-green-50 transition-colors disabled:opacity-50"
+                        title="保存修改"
+                      >
+                        {isSaving ? '保存中...' : '💾 保存'}
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        disabled={isSaving}
+                        className="text-gray-500 hover:text-gray-700 text-sm px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        title="取消编辑"
+                      >
+                        ❌ 取消
+                      </button>
+                    </>
+                  )}
                   <button
-                    onClick={() => handleDeleteMediaItem(selectedMediaItem.id)}
-                    className="text-red-500 hover:text-red-700 text-sm px-3 py-1 border border-red-300 rounded hover:bg-red-50 transition-colors"
-                    title="删除媒体文件"
-                  >
-                    🗑️ 删除
-                  </button>
-                  <button
-                    onClick={() => setSelectedMediaItem(null)} // Renamed state setter
+                    onClick={() => {
+                      setSelectedMediaItem(null);
+                      setIsEditing(false);
+                      setImageDimensions(null);
+                    }}
                     className="text-gray-500 hover:text-gray-700 text-2xl"
                   >
                     ×
@@ -541,23 +720,25 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
                 </div>
               </div>
               
-              <div className="aspect-video bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+              {/* 自适应媒体容器 */}
+              <div 
+                className="bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden"
+                style={getContainerStyle()}
+              >
                 {selectedMediaItem.mediaType === 'IMAGE' ? (
                   <Image
                     src={selectedMediaItem.url}
                     alt={selectedMediaItem.title}
-                    className="max-w-full max-h-full object-contain"
-                    width={500}
-                    height={500}
+                    className="w-full h-full object-contain"
+                    width={imageDimensions?.width || 800}
+                    height={imageDimensions?.height || 600}
+                    onLoad={handleImageLoad}
                     onError={(e) => {
                       console.error('Modal image failed to load:', selectedMediaItem.url);
                       console.error('Modal image error event:', e);
                       // Show a placeholder or error state
                       e.currentTarget.style.display = 'none';
                       e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                    }}
-                    onLoad={() => {
-                      console.log('Modal image loaded successfully:', selectedMediaItem.url);
                     }}
                   />
                 ) : selectedMediaItem.mediaType === 'VIDEO' ? (
@@ -566,6 +747,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
                     poster={selectedMediaItem.thumbnailUrl}
                     controls
                     className="w-full h-full object-contain"
+                    style={{ maxHeight: '70vh' }}
                   >
                     Your browser does not support the video tag.
                   </video>
@@ -592,17 +774,41 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
                 </div>
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center space-x-4 text-sm text-gray-600">
                   <span>📅 {selectedMediaItem.date}</span>
                   <span>🎂 {selectedMediaItem.age}</span>
                   {selectedMediaItem.mediaType === 'VIDEO' && selectedMediaItem.duration && (
                     <span>⏱️ {formatDuration(selectedMediaItem.duration)}</span>
                   )}
+                  {imageDimensions && (
+                    <span>📐 {imageDimensions.width} × {imageDimensions.height}</span>
+                  )}
                 </div>
-                <p className="text-gray-700">{selectedMediaItem.description}</p>
+                
+                {/* 描述部分 - 支持编辑 */}
+                {!isEditing ? (
+                  <div>
+                    <p className="text-gray-700 text-sm font-medium mb-1">描述：</p>
+                    <p className="text-gray-700">
+                      {selectedMediaItem.description || '暂无描述'}
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">描述：</label>
+                    <textarea
+                      value={editFormData.description}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                      rows={3}
+                      placeholder="描述这个媒体文件的故事..."
+                    />
+                  </div>
+                )}
+                
                 <div className="text-xs text-gray-500">
-                  {selectedMediaItem.format && <span>Format: {selectedMediaItem.format}</span>}
+                  {selectedMediaItem.format && <span>格式: {selectedMediaItem.format}</span>}
                 </div>
               </div>
             </div>

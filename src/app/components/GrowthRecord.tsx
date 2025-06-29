@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useBaby } from '@/hooks/useBaby'
 import { useGrowthRecords } from '@/hooks/useGrowthRecords'
+import { useToastContext } from '@/components/providers/ToastProvider'
 
 interface GrowthEntry {
   id: string
@@ -16,6 +17,7 @@ interface GrowthEntry {
 export default function GrowthRecord() {
   const { baby } = useBaby()
   const { records, loading, error, createRecord, updateRecord, deleteRecord } = useGrowthRecords(baby?.id)
+  const toast = useToastContext()
   
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -28,6 +30,11 @@ export default function GrowthRecord() {
     headCircumference: '',
     notes: ''
   })
+
+  // 新增：删除确认状态
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [recordToDelete, setRecordToDelete] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // 日历相关函数
   const getDaysInMonth = (date: Date) => {
@@ -107,12 +114,12 @@ export default function GrowthRecord() {
 
   const handleSubmit = async () => {
     if (!formData.date) {
-      alert('请选择记录日期')
+      toast.error('验证失败', '请选择记录日期')
       return
     }
 
     if (!baby?.id) {
-      alert('请先创建宝宝信息')
+      toast.error('验证失败', '请先创建宝宝信息')
       return
     }
 
@@ -128,17 +135,55 @@ export default function GrowthRecord() {
 
       if (editingRecord) {
         await updateRecord(editingRecord.id, recordData)
-        alert('成长记录已更新！')
+        toast.success('更新成功', '成长记录已更新！')
       } else {
         await createRecord(recordData)
-        alert('成长记录已添加！')
+        toast.success('添加成功', '成长记录已添加！')
       }
       
       resetForm()
     } catch (error) {
       console.error('Error saving record:', error)
-      alert('保存失败，请重试')
+      const errorMessage = error instanceof Error ? error.message : '操作失败，请重试'
+      toast.error('保存失败', errorMessage)
     }
+  }
+
+  // 新增：开始删除流程
+  const handleStartDelete = (id: string) => {
+    setRecordToDelete(id)
+    setShowDeleteConfirm(true)
+  }
+
+  // 新增：取消删除
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false)
+    setRecordToDelete(null)
+  }
+
+  // 更新：确认删除
+  const handleConfirmDelete = async () => {
+    if (!recordToDelete) return
+    
+    setIsDeleting(true)
+    try {
+      await deleteRecord(recordToDelete)
+      toast.success('删除成功', '成长记录已删除！')
+      resetForm()
+      setShowDeleteConfirm(false)
+      setRecordToDelete(null)
+    } catch (error) {
+      console.error('Error deleting record:', error)
+      const errorMessage = error instanceof Error ? error.message : '删除失败，请重试'
+      toast.error('删除失败', errorMessage)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  // 保留原函数名以兼容现有代码，但更新实现
+  const handleDelete = (id: string) => {
+    handleStartDelete(id)
   }
 
   const handleDateClick = (dateString: string, record?: GrowthEntry) => {
@@ -165,19 +210,6 @@ export default function GrowthRecord() {
       })
     }
     setShowForm(true)
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('确定要删除这条成长记录吗？')) return
-    
-    try {
-      await deleteRecord(id)
-      alert('成长记录已删除！')
-      resetForm()
-    } catch (error) {
-      console.error('Error deleting record:', error)
-      alert('删除失败，请重试')
-    }
   }
 
   const calculateAge = (date: string) => {
@@ -661,6 +693,58 @@ export default function GrowthRecord() {
               </button>
               <button 
                 onClick={resetForm} 
+                style={{ 
+                  flex: 1,
+                  background: 'white', 
+                  color: '#374151', 
+                  padding: '12px 24px', 
+                  borderRadius: '8px', 
+                  border: '1px solid #d1d5db', 
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 50 }}>
+          <div style={{ background: 'white', borderRadius: '12px', padding: '24px', width: '100%', maxWidth: '28rem', maxHeight: '90vh', overflow: 'auto' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0, marginBottom: '16px' }}>
+              确认删除
+            </h3>
+            <p style={{ color: '#6b7280', marginBottom: '24px' }}>
+              确定要删除这条成长记录吗？
+            </p>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button 
+                onClick={handleConfirmDelete} 
+                style={{ 
+                  flex: 1,
+                  background: 'linear-gradient(to right, #ec4899, #8b5cf6)', 
+                  color: 'white', 
+                  padding: '12px 24px', 
+                  borderRadius: '8px', 
+                  border: 'none', 
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                确认
+              </button>
+              <button 
+                onClick={handleCancelDelete} 
                 style={{ 
                   flex: 1,
                   background: 'white', 
