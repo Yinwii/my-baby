@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useBaby } from '@/hooks/useBaby'
+import { useToastContext } from '@/components/providers/ToastProvider'
 import Image from 'next/image'
 
 export default function BabyInfo() {
   const { baby, loading, error, createBaby, updateBaby } = useBaby()
+  const toast = useToastContext()
   const [isEditing, setIsEditing] = useState(false)
   const [showAvatarUpload, setShowAvatarUpload] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
@@ -76,10 +78,10 @@ export default function BabyInfo() {
 
       setShowAvatarUpload(false)
       setSelectedAvatarFile(null)
-      alert('头像更新成功！')
+      toast.success('头像更新成功', '头像已成功更新并保存')
     } catch (error) {
       console.error('Avatar upload error:', error)
-      alert('头像上传失败，请重试')
+      toast.error('头像上传失败', '请检查网络连接后重试')
     } finally {
       setUploadingAvatar(false)
       setTimeout(() => {
@@ -107,9 +109,9 @@ export default function BabyInfo() {
         })
       }
       setIsEditing(false)
-      alert('宝宝信息已保存！')
+      toast.success('保存成功', '宝宝信息已成功保存')
     } catch {
-      alert('保存失败，请重试')
+      toast.error('保存失败', '请检查信息后重试')
     }
   }
 

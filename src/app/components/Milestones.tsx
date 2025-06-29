@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useBaby } from '@/hooks/useBaby'
 import { useMilestones } from '@/hooks/useMilestones'
+import { useToastContext } from '@/components/providers/ToastProvider'
 
 interface Milestone {
   id: string
@@ -15,6 +16,7 @@ interface Milestone {
 export default function Milestones() {
   const { baby } = useBaby()
   const { milestones, loading, error, createMilestone, updateMilestone, deleteMilestone } = useMilestones(baby?.id)
+  const toast = useToastContext()
   
   const [showForm, setShowForm] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null)
@@ -38,12 +40,12 @@ export default function Milestones() {
 
   const handleSubmit = async () => {
     if (!formData.title) {
-      alert('请填写标题')
+      toast.error('验证失败', '请填写标题')
       return
     }
 
     if (!baby?.id) {
-      alert('请先创建宝宝信息')
+      toast.error('验证失败', '请先创建宝宝信息')
       return
     }
 
@@ -58,16 +60,17 @@ export default function Milestones() {
 
       if (editingMilestone) {
         await updateMilestone(editingMilestone.id, milestoneData)
-        alert('里程碑已更新！')
+        toast.success('更新成功', '里程碑已成功更新')
       } else {
         await createMilestone(milestoneData)
-        alert('里程碑已添加！')
+        toast.success('添加成功', '里程碑已成功添加')
       }
       
       resetForm()
     } catch (error) {
       console.error('Error saving milestone:', error)
-      alert('保存失败，请重试')
+      const errorMessage = error instanceof Error ? error.message : '操作失败，请重试'
+      toast.error('保存失败', errorMessage)
     }
   }
 
@@ -87,10 +90,11 @@ export default function Milestones() {
     
     try {
       await deleteMilestone(id)
-      alert('里程碑已删除！')
+      toast.success('删除成功', '里程碑已成功删除')
     } catch (error) {
       console.error('Error deleting milestone:', error)
-      alert('删除失败，请重试')
+      const errorMessage = error instanceof Error ? error.message : '删除失败，请重试'
+      toast.error('删除失败', errorMessage)
     }
   }
 
