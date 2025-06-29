@@ -40,8 +40,9 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
     }
   }, [baby?.birthDate])
 
-  // Get latest growth record
-  const latestRecord = records?.[0] // Records are sorted by date desc
+  // Get latest growth record with weight and height separately
+  const latestWeightRecord = records?.find(record => record.weight !== null && record.weight !== undefined)
+  const latestHeightRecord = records?.find(record => record.height !== null && record.height !== undefined)
   
   // Get recent milestones (latest 3)
   const recentMilestones = milestones?.slice(0, 3) || []
@@ -153,7 +154,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                 ⚖️
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-2">最新体重</h3>
-              <p className="text-base font-bold text-gray-800">{latestRecord?.weight ? `${latestRecord.weight} kg` : '暂无数据'}</p>
+              <p className="text-base font-bold text-gray-800">{latestWeightRecord?.weight ? `${latestWeightRecord.weight} kg` : '暂无数据'}</p>
               <button 
                 onClick={() => setActiveTab('growth')}
                 className="text-xs text-orange-600 hover:text-orange-800 font-medium mt-1"
@@ -170,7 +171,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                 📏
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-2">最新身高</h3>
-              <p className="text-base font-bold text-gray-800">{latestRecord?.height ? `${latestRecord.height} cm` : '暂无数据'}</p>
+              <p className="text-base font-bold text-gray-800">{latestHeightRecord?.height ? `${latestHeightRecord.height} cm` : '暂无数据'}</p>
               
             </div>
           </div>
