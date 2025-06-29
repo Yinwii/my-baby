@@ -729,24 +729,35 @@ export default function GrowthRecord() {
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button 
                 onClick={handleConfirmDelete} 
+                disabled={isDeleting}
                 style={{ 
                   flex: 1,
-                  background: 'linear-gradient(to right, #ec4899, #8b5cf6)', 
+                  background: isDeleting ? '#d1d5db' : 'linear-gradient(to right, #ec4899, #8b5cf6)', 
                   color: 'white', 
                   padding: '12px 24px', 
                   borderRadius: '8px', 
                   border: 'none', 
                   fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s'
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  transition: 'transform 0.2s',
+                  opacity: isDeleting ? 0.7 : 1
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                onMouseEnter={(e) => {
+                  if (!isDeleting) {
+                    e.currentTarget.style.transform = 'scale(1.02)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isDeleting) {
+                    e.currentTarget.style.transform = 'scale(1)'
+                  }
+                }}
               >
-                确认
+                {isDeleting ? '删除中...' : '确认'}
               </button>
               <button 
-                onClick={handleCancelDelete} 
+                onClick={handleCancelDelete}
+                disabled={isDeleting}
                 style={{ 
                   flex: 1,
                   background: 'white', 
@@ -755,11 +766,20 @@ export default function GrowthRecord() {
                   borderRadius: '8px', 
                   border: '1px solid #d1d5db', 
                   fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s'
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  transition: 'background-color 0.2s',
+                  opacity: isDeleting ? 0.5 : 1
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                onMouseEnter={(e) => {
+                  if (!isDeleting) {
+                    e.currentTarget.style.backgroundColor = '#f9fafb'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isDeleting) {
+                    e.currentTarget.style.backgroundColor = 'white'
+                  }
+                }}
               >
                 取消
               </button>
