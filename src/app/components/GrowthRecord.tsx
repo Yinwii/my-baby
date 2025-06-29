@@ -218,9 +218,11 @@ export default function GrowthRecord() {
     const birth = new Date(baby.birthDate)
     const recordDate = new Date(date)
     const diffTime = Math.abs(recordDate.getTime() - birth.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) - 1 // 减去1天，不计算刚出生那天
     
-    if (diffDays < 30) {
+    if (diffDays <= 0) {
+      return '出生当天'
+    } else if (diffDays < 30) {
       return `${diffDays}天`
     } else if (diffDays < 365) {
       const months = Math.floor(diffDays / 30)

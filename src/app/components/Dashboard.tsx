@@ -152,7 +152,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl mb-3">
                 ⚖️
               </div>
-              <h3 className="text-sm font-medium text-gray-600 mb-2">当前体重</h3>
+              <h3 className="text-sm font-medium text-gray-600 mb-2">最新体重</h3>
               <p className="text-base font-bold text-gray-800">{latestRecord?.weight ? `${latestRecord.weight} kg` : '暂无数据'}</p>
               <button 
                 onClick={() => setActiveTab('growth')}
@@ -169,7 +169,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center text-white text-xl mb-3">
                 📏
               </div>
-              <h3 className="text-sm font-medium text-gray-600 mb-2">当前身高</h3>
+              <h3 className="text-sm font-medium text-gray-600 mb-2">最新身高</h3>
               <p className="text-base font-bold text-gray-800">{latestRecord?.height ? `${latestRecord.height} cm` : '暂无数据'}</p>
               
             </div>
