@@ -17,6 +17,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
   const { milestones, loading: milestonesLoading } = useMilestones(baby?.id)
 
   const [currentAge, setCurrentAge] = useState('')
+  const [currentDays, setCurrentDays] = useState(0)
 
   // Calculate age when baby data is available
   useEffect(() => {
@@ -25,6 +26,9 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
       const now = new Date()
       const diffTime = Math.abs(now.getTime() - birth.getTime())
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) - 1 // 减去1天，不计算刚出生那天
+      
+      // Set total days
+      setCurrentDays(diffDays)
       
       if (diffDays <= 0) {
         setCurrentAge('出生当天')
@@ -136,6 +140,9 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                 <div className="flex-1 min-w-0">
                   <h1 className="text-xl font-bold text-gray-800 truncate mb-1">{baby.name}</h1>
                   <p className="text-gray-600 text-base mb-1">{currentAge}</p>
+                  <p className="text-sm text-purple-600 font-medium mb-2">
+                    已经 {currentDays} 天了 ✨
+                  </p>
                   <p className="text-sm text-gray-500 truncate mb-2">
                     出生于 {new Date(baby.birthDate).toLocaleDateString()}
                   </p>

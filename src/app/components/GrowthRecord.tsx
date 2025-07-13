@@ -284,27 +284,17 @@ export default function GrowthRecord() {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', flexDirection: 'row', gap: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>成长记录日历</h2>
-          <button
+          <p style={{ color: '#6b7280' }}>点击日期添加或查看成长记录</p>
+        </div>
+        <button
           onClick={() => handleDateClick(new Date().toISOString().split('T')[0])}
-          style={{ 
-            background: 'linear-gradient(to right, #ec4899, #8b5cf6)', 
-            color: 'white', 
-            padding: '12px 24px', 
-            borderRadius: '8px', 
-            border: 'none', 
-            fontWeight: '500',
-            cursor: 'pointer',
-            alignSelf: 'flex-start'
-          }}
+          className="btn-primary"
         >
           添加今日记录
         </button>
-          
-        </div>
-      <p style={{ color: '#6b7280' }}>点击日期添加或查看成长记录</p>
       </div>
 
       {/* Monthly Statistics */}
