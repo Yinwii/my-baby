@@ -284,7 +284,7 @@ export default function GrowthRecord() {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'row', gap: '16px' }}>
         <div>
           <h2 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>成长记录日历</h2>
           <button
@@ -302,9 +302,9 @@ export default function GrowthRecord() {
         >
           添加今日记录
         </button>
-          <p style={{ color: '#6b7280' }}>点击日期添加或查看成长记录</p>
+          
         </div>
-        
+      <p style={{ color: '#6b7280' }}>点击日期添加或查看成长记录</p>
       </div>
 
       {/* Monthly Statistics */}
