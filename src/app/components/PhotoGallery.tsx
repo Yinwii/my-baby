@@ -516,7 +516,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
 
       {/* Upload Form */}
       {showUploadForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-800 mb-4">上传新媒体</h3>
             {uploadError && (
@@ -655,7 +655,7 @@ export default function PhotoGallery() { // Consider renaming to MediaGallery la
       {/* Media Item Detail Modal */}
       {selectedMediaItem && ( // Renamed from selectedPhoto
         <div 
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center p-4 z-50"
           onClick={() => {
             setSelectedMediaItem(null);
             setIsEditing(false);

@@ -49,9 +49,10 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
   // Get recent milestones (latest 3)
   const recentMilestones = milestones?.slice(0, 3) || []
 
-  // Prepare chart data
+  // Prepare chart data - 使用真实的时间戳作为X轴
   const chartData = records?.map(record => ({
-    date: new Date(record.date).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }),
+    date: new Date(record.date).getTime(), // 使用时间戳
+    dateFormatted: new Date(record.date).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }),
     fullDate: record.date,
     体重: record.weight || null,
     身高: record.height || null,
@@ -115,7 +116,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-6">
           {/* 宝宝信息卡片 - 占据更多空间 */}
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
-            <div className="card p-4 h-full bg-gradient-to-br from-pink-50 to-purple-50 border-2 border-pink-200 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
+            <div className="card p-4 h-full bg-gradient-to-br from-pink-50 to-purple-50 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
               <div className="flex items-center space-x-4 h-full">
                 <div className="w-20 h-20 flex-shrink-0">
                   {baby.avatar ? (
@@ -124,7 +125,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                       alt="宝宝头像"
                       width={80}
                       height={80}
-                      className="w-20 h-20 rounded-full object-cover border-2 border-pink-300"
+                      className="w-20 h-20 rounded-full object-cover"
                     />
                   ) : (
                     <div className="w-20 h-20 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white text-3xl">
@@ -150,7 +151,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           </div>
 
           {/* 体重卡片 */}
-          <div className="card p-4 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
+          <div className="card p-4 bg-gradient-to-br from-blue-50 to-blue-100 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl mb-3">
                 ⚖️
@@ -167,7 +168,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           </div>
 
           {/* 身高卡片 */}
-          <div className="card p-4 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
+          <div className="card p-4 bg-gradient-to-br from-green-50 to-green-100 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center text-white text-xl mb-3">
                 📏
@@ -184,7 +185,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           </div>
 
           {/* 里程碑数卡片 */}
-          <div className="card p-4 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
+          <div className="card p-4 bg-gradient-to-br from-purple-50 to-purple-100 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white text-xl mb-3">
                 🏆
@@ -201,7 +202,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           </div>
 
           {/* 新增：图片数量卡片 */}
-          <div className="card p-4 bg-gradient-to-br from-orange-50 to-red-100 border border-orange-200 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
+          <div className="card p-4 bg-gradient-to-br from-orange-50 to-red-100 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-red-600 flex items-center justify-center text-white text-xl mb-3">
                 📸
@@ -221,7 +222,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
         {/* 下方左右布局 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 左下角：最近里程碑 */}
-          <div className="card p-6 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 min-h-[400px]">
+          <div className="card p-6 bg-gradient-to-br from-amber-50 to-orange-50 min-h-[400px]">
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
               <span className="mr-2">🏆</span>
               最近里程碑
@@ -234,7 +235,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
             ) : recentMilestones.length > 0 ? (
               <div className="space-y-3 mb-4 flex-1">
                 {recentMilestones.map((milestone) => (
-                  <div key={milestone.id} className="flex items-start space-x-4 p-4 bg-white/70 backdrop-blur-sm rounded-lg border border-white/50">
+                  <div key={milestone.id} className="flex items-start space-x-4 p-4 bg-white/70 backdrop-blur-sm rounded-lg">
                     <span className="text-2xl">🎯</span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-800 text-base mb-1">{milestone.title}</p>
@@ -273,19 +274,26 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           </div>
 
           {/* 右下角：成长记录图表 */}
-          <div className="card p-6 bg-gradient-to-br from-emerald-50 via-cyan-50 to-teal-50 border-2 border-emerald-300 min-h-[400px] flex flex-col shadow-lg">
+          <div className="card p-6 bg-gradient-to-br from-emerald-50 via-cyan-50 to-teal-50 min-h-[400px] flex flex-col shadow-lg">
             <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
               <span className="mr-3 text-2xl">📈</span>
               成长趋势图表
             </h3>
             {chartData.length > 0 ? (
               <div className="flex-1">
-                <div className="h-80 bg-white/80 backdrop-blur-sm rounded-xl p-4 border-2 border-white/60 shadow-inner">
+                <div className="h-80 bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-inner">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#34d399" opacity={0.3} />
                       <XAxis 
                         dataKey="date" 
+                        type="number"
+                        scale="time"
+                        domain={['dataMin', 'dataMax']}
+                        tickFormatter={(timestamp) => {
+                          const date = new Date(timestamp);
+                          return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+                        }}
                         tick={{ fontSize: 12, fill: '#374151', fontWeight: '500' }}
                         stroke="#6b7280"
                         strokeWidth={2}
@@ -309,7 +317,10 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                         label={{ value: '身高(cm)', angle: 90, position: 'insideRight', style: { fontSize: '13px', fill: '#059669', fontWeight: 'bold' } }}
                       />
                       <Tooltip 
-                        labelFormatter={(label) => `📅 日期: ${label}`}
+                        labelFormatter={(timestamp) => {
+                          const date = new Date(timestamp);
+                          return `📅 日期: ${date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })}`;
+                        }}
                         formatter={(value: unknown, name: string) => [
                           (typeof value === 'number' && value !== null) ? `${value} ${name === '体重' ? 'kg' : 'cm'}` : '无数据',
                           name === '体重' ? '⚖️ 体重' : '📏 身高'
@@ -357,13 +368,13 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                 </div>
                 {/* 添加一些统计信息 */}
                 <div className="mt-6 grid grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-r from-blue-100 to-cyan-100 rounded-lg p-3 border border-blue-200">
+                  <div className="bg-gradient-to-r from-blue-100 to-cyan-100 rounded-lg p-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-blue-800">记录天数</span>
                       <span className="text-lg font-bold text-blue-600">{chartData.length} 天</span>
                     </div>
                   </div>
-                  <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg p-3 border border-green-200">
+                  <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg p-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-green-800">最新记录</span>
                       <span className="text-lg font-bold text-green-600">
@@ -375,7 +386,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
               </div>
             ) : (
               <div className="flex-1 flex flex-col justify-center">
-                <div className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-white/60 shadow-inner">
+                <div className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-xl shadow-inner">
                   <div className="mb-6">
                     <span className="text-6xl block mb-2">📊</span>
                     <div className="w-16 h-1 bg-gradient-to-r from-emerald-400 to-teal-400 rounded mx-auto"></div>

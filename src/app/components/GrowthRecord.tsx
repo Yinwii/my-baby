@@ -287,9 +287,7 @@ export default function GrowthRecord() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
           <h2 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>成长记录日历</h2>
-          <p style={{ color: '#6b7280' }}>点击日期添加或查看成长记录</p>
-        </div>
-        <button
+          <button
           onClick={() => handleDateClick(new Date().toISOString().split('T')[0])}
           style={{ 
             background: 'linear-gradient(to right, #ec4899, #8b5cf6)', 
@@ -304,6 +302,9 @@ export default function GrowthRecord() {
         >
           添加今日记录
         </button>
+          <p style={{ color: '#6b7280' }}>点击日期添加或查看成长记录</p>
+        </div>
+        
       </div>
 
       {/* Monthly Statistics */}
@@ -521,7 +522,7 @@ export default function GrowthRecord() {
       {/* Add/Edit Record Form */}
       {showForm && (
         <div 
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 50 }}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 50 }}
           onClick={() => {
             resetForm();
           }}
@@ -761,7 +762,7 @@ export default function GrowthRecord() {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div 
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 50 }}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 50 }}
           onClick={() => {
             handleCancelDelete();
           }}
