@@ -520,31 +520,73 @@ export default function GrowthRecord() {
 
       {/* Add/Edit Record Form */}
       {showForm && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 50 }}>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '24px', width: '100%', maxWidth: '28rem', maxHeight: '90vh', overflow: 'auto' }}>
+        <div 
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 50 }}
+          onClick={() => {
+            resetForm();
+          }}
+        >
+          <div 
+            style={{ background: 'white', borderRadius: '12px', padding: '24px', width: '100%', maxWidth: '28rem', maxHeight: '90vh', overflow: 'auto' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>
                 {editingRecord ? '编辑成长记录' : '添加成长记录'}
               </h3>
-              {editingRecord && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {editingRecord && (
+                  <button
+                    onClick={() => handleDelete(editingRecord.id)}
+                    style={{ 
+                      color: '#ef4444', 
+                      background: 'none', 
+                      border: 'none', 
+                      padding: '8px', 
+                      borderRadius: '4px', 
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    title="删除记录"
+                  >
+                    🗑️
+                  </button>
+                )}
                 <button
-                  onClick={() => handleDelete(editingRecord.id)}
-                  style={{ 
-                    color: '#ef4444', 
-                    background: 'none', 
-                    border: 'none', 
-                    padding: '8px', 
-                    borderRadius: '4px', 
+                  onClick={resetForm}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '40px',
+                    height: '40px',
+                    background: '#f3f4f6',
+                    border: 'none',
+                    borderRadius: '50%',
                     cursor: 'pointer',
-                    transition: 'background-color 0.2s'
+                    transition: 'all 0.2s',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                    color: '#6b7280'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  title="删除记录"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#ef4444';
+                    e.currentTarget.style.color = 'white';
+                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#f3f4f6';
+                    e.currentTarget.style.color = '#6b7280';
+                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                  }}
+                  title="关闭"
                 >
-                  🗑️
+                  <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
-              )}
+              </div>
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -718,11 +760,59 @@ export default function GrowthRecord() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 50 }}>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '24px', width: '100%', maxWidth: '28rem', maxHeight: '90vh', overflow: 'auto' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0, marginBottom: '16px' }}>
-              确认删除
-            </h3>
+        <div 
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 50 }}
+          onClick={() => {
+            handleCancelDelete();
+          }}
+        >
+          <div 
+            style={{ background: 'white', borderRadius: '12px', padding: '24px', width: '100%', maxWidth: '28rem', maxHeight: '90vh', overflow: 'auto' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>
+                确认删除
+              </h3>
+              <button
+                onClick={handleCancelDelete}
+                disabled={isDeleting}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '40px',
+                  height: '40px',
+                  background: isDeleting ? '#d1d5db' : '#f3f4f6',
+                  border: 'none',
+                  borderRadius: '50%',
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                  color: isDeleting ? '#9ca3af' : '#6b7280',
+                  opacity: isDeleting ? 0.5 : 1
+                }}
+                onMouseEnter={(e) => {
+                  if (!isDeleting) {
+                    e.currentTarget.style.background = '#ef4444';
+                    e.currentTarget.style.color = 'white';
+                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.15)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isDeleting) {
+                    e.currentTarget.style.background = '#f3f4f6';
+                    e.currentTarget.style.color = '#6b7280';
+                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                  }
+                }}
+                title="关闭"
+              >
+                <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             <p style={{ color: '#6b7280', marginBottom: '24px' }}>
               确定要删除这条成长记录吗？
             </p>
