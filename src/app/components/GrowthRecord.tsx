@@ -308,7 +308,7 @@ export default function GrowthRecord() {
       </div>
 
       {/* Monthly Statistics */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+      {/* <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
         <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', padding: '16px', textAlign: 'center' }}>
           <div style={{ fontSize: '1.5rem', marginBottom: '6px' }}>📊</div>
           <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '2px' }}>本月记录</div>
@@ -329,7 +329,7 @@ export default function GrowthRecord() {
           <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '2px' }}>头围记录</div>
           <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#f59e0b' }}>{monthlyStats.headRecords}</div>
         </div>
-      </div>
+      </div> */}
 
       {/* Calendar Navigation */}
       <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '24px' }}>

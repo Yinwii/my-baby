@@ -185,7 +185,7 @@ export default function BabyInfo() {
       </div>
 
       {showAvatarUpload && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-800 mb-4">更换头像</h3>
             
