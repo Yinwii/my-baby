@@ -79,25 +79,25 @@ export default function GrowthRecord() {
   }, [currentDate, records])
 
   // 获取记录按月份分组的统计
-  const monthlyStats = useMemo(() => {
-    const currentMonthRecords = records.filter(record => {
-      const recordDate = new Date(record.date)
-      return recordDate.getFullYear() === currentDate.getFullYear() &&
-             recordDate.getMonth() === currentDate.getMonth()
-    })
+  // const monthlyStats = useMemo(() => {
+  //   const currentMonthRecords = records.filter(record => {
+  //     const recordDate = new Date(record.date)
+  //     return recordDate.getFullYear() === currentDate.getFullYear() &&
+  //            recordDate.getMonth() === currentDate.getMonth()
+  //   })
 
-    const weightRecords = currentMonthRecords.filter(r => r.weight).length
-    const heightRecords = currentMonthRecords.filter(r => r.height).length
-    const headRecords = currentMonthRecords.filter(r => r.headCircumference).length
+  //   const weightRecords = currentMonthRecords.filter(r => r.weight).length
+  //   const heightRecords = currentMonthRecords.filter(r => r.height).length
+  //   const headRecords = currentMonthRecords.filter(r => r.headCircumference).length
 
-    return {
-      totalRecords: currentMonthRecords.length,
-      weightRecords,
-      heightRecords,
-      headRecords,
-      latestRecord: currentMonthRecords[0]
-    }
-  }, [records, currentDate])
+  //   return {
+  //     totalRecords: currentMonthRecords.length,
+  //     weightRecords,
+  //     heightRecords,
+  //     headRecords,
+  //     latestRecord: currentMonthRecords[0]
+  //   }
+  // }, [records, currentDate])
 
   const resetForm = () => {
     setFormData({
