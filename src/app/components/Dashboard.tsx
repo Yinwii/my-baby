@@ -70,7 +70,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
   const latestHeightRecord = records?.find(record => record.height !== null && record.height !== undefined)
   
   // Get recent milestones (latest 3)
-  const recentMilestones = milestones?.slice(0, 3) || []
+  const recentMilestones = milestones?.slice(0, 5) || []
 
   // Prepare chart data - 使用真实的时间戳作为X轴
   const chartData = records?.map(record => ({
@@ -179,7 +179,9 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           {/* 体重卡片 */}
           <div className="card p-4 bg-gradient-to-br from-blue-50 to-blue-100 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
-
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl mb-3">
+                ⚖️
+              </div>
               <h3 className="text-sm font-medium text-gray-600 mb-2">最新体重</h3>
               <p className="text-base font-bold text-gray-800">{latestWeightRecord?.weight ? `${latestWeightRecord.weight} kg` : '暂无数据'}</p>
               <button 
@@ -264,12 +266,12 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                         <span className="font-medium text-gray-800 text-base truncate">
                           {milestone.title}
                         </span>
-                        {milestone.tags.slice(0, 2).map((tag, index) => (
+                        {milestone.tags.slice(0, 4).map((tag, index) => (
                           <span key={index} className="shrink-0 text-[11px] bg-amber-200/70 text-amber-800 px-2 py-0.5 rounded-full">
                             #{tag}
                           </span>
                         ))}
-                        {milestone.tags.length > 2 && (
+                        {milestone.tags.length > 4 && (
                           <span className="shrink-0 text-xs text-gray-500">+{milestone.tags.length - 2}</span>
                         )}
                         <span className="ml-auto text-sm text-gray-500 whitespace-nowrap">
