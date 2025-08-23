@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useBaby } from '@/hooks/useBaby'
 import { useMilestones } from '@/hooks/useMilestones'
 import { useToastContext } from '@/components/providers/ToastProvider'
@@ -20,6 +20,7 @@ export default function Milestones() {
   
   const [showForm, setShowForm] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null)
+  const [activeTag, setActiveTag] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     title: '',
@@ -37,6 +38,16 @@ export default function Milestones() {
     setEditingMilestone(null)
     setShowForm(false)
   }
+
+  // Open form if triggered from dashboard
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && sessionStorage.getItem('openMilestoneForm') === '1') {
+        setShowForm(true)
+        sessionStorage.removeItem('openMilestoneForm')
+      }
+    } catch {}
+  }, [])
 
   const handleSubmit = async () => {
     if (!formData.title) {
@@ -60,10 +71,10 @@ export default function Milestones() {
 
       if (editingMilestone) {
         await updateMilestone(editingMilestone.id, milestoneData)
-        toast.success('更新成功', '里程碑已成功更新')
+        toast.success('更新成功', '已成功更新')
       } else {
         await createMilestone(milestoneData)
-        toast.success('添加成功', '里程碑已成功添加')
+        toast.success('添加成功', '已成功添加')
       }
       
       resetForm()
@@ -86,11 +97,11 @@ export default function Milestones() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('确定要删除这个里程碑吗？')) return
+    if (!confirm('确定要删除这个记录吗？')) return
     
     try {
       await deleteMilestone(id)
-      toast.success('删除成功', '里程碑已成功删除')
+      toast.success('删除成功', '已成功删除')
     } catch (error) {
       console.error('Error deleting milestone:', error)
       const errorMessage = error instanceof Error ? error.message : '删除失败，请重试'
@@ -123,6 +134,12 @@ export default function Milestones() {
 
   // 获取所有使用的标签
   const allTags = [...new Set(milestones.flatMap(m => m.tags))]
+
+  // Filtered milestones by activeTag
+  const filteredMilestones = useMemo(() => {
+    if (!activeTag) return milestones
+    return milestones.filter(m => m.tags.includes(activeTag))
+  }, [milestones, activeTag])
 
   // 获取标签统计
   const getTagStats = () => {
@@ -183,28 +200,40 @@ export default function Milestones() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">发展里程碑</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">随心记</h2>
           <p className="text-gray-600">记录宝宝成长的重要时刻</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
           className="btn-primary"
         >
-          添加里程碑
+          添加记录
         </button>
       </div>
 
-      {/* Tag Statistics */}
+      {/* Tag Statistics + Filter */}
       {allTags.length > 0 && (
         <div className="card">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">热门标签</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-800">热门标签</h3>
+            {activeTag && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-purple-700 bg-purple-100 px-2 py-1 rounded-full">已选: #{activeTag}</span>
+                <button className="text-xs text-gray-600 hover:text-red-600" onClick={() => setActiveTag(null)}>清除</button>
+              </div>
+            )}
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {getTagStats().map(({ tag, count }) => (
-              <div key={tag} className="text-center p-1 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+              <button
+                key={tag}
+                onClick={() => setActiveTag(prev => prev === tag ? null : tag)}
+                className={`text-center p-1 rounded-lg transition-colors ${activeTag === tag ? 'bg-purple-200' : 'bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200'}`}
+              >
                 <div className="text-2xl mb-1">🏷️</div>
-                <div className="text-sm text-gray-600 mb-1">{tag}</div>
-                <div className="text-sm font-bold text-purple-600">{count}</div>
-              </div>
+                <div className="text-sm text-gray-700 mb-1">{tag}</div>
+                <div className="text-sm font-bold text-purple-700">{count}</div>
+              </button>
             ))}
           </div>
         </div>
@@ -214,7 +243,7 @@ export default function Milestones() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="card text-center">
           <div className="text-3xl mb-2">🏆</div>
-          <div className="text-sm text-gray-600 mb-1">总里程碑</div>
+          <div className="text-sm text-gray-600 mb-1">总记录</div>
           <div className="text-2xl font-bold text-purple-600">{milestones.length}</div>
         </div>
 
@@ -247,7 +276,7 @@ export default function Milestones() {
           >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold">
-                {editingMilestone ? '编辑里程碑' : '添加里程碑'}
+                {editingMilestone ? '编辑' : '添加'}
               </h3>
               <button
                 onClick={resetForm}
@@ -295,7 +324,7 @@ export default function Milestones() {
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   className="input-field"
                   rows={4}
-                  placeholder="详细描述这个里程碑..."
+                  placeholder="详细内容"
                 />
               </div>
 
@@ -308,10 +337,10 @@ export default function Milestones() {
                   value={formData.tags}
                   onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
                   className="input-field"
-                  placeholder="例: 运动发展, 翻身, 里程碑"
+                  placeholder="例: 日记, 运动发展, 翻身, 里程碑"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  常用标签: 运动发展, 语言发展, 社交发展, 认知发展, 生活自理
+                  常用标签: 运动发展, 语言发展, 社交发展, 认知发展, 生活自理, 育儿笔记
                 </p>
 
                 {/* 已存在的标签 */}
@@ -345,7 +374,7 @@ export default function Milestones() {
 
             <div className="flex space-x-3 mt-6">
               <button onClick={handleSubmit} className="btn-primary flex-1">
-                {editingMilestone ? '更新里程碑' : '添加里程碑'}
+                {editingMilestone ? '更新' : '添加'}
               </button>
               <button onClick={resetForm} className="btn-secondary flex-1">
                 取消
@@ -357,22 +386,22 @@ export default function Milestones() {
 
       {/* Milestones Timeline */}
       <div className="space-y-4">
-        <h3 className="text-xl font-bold text-gray-800">里程碑时间线</h3>
-        {milestones.length === 0 ? (
+        <h3 className="text-xl font-bold text-gray-800">时间线</h3>
+        {filteredMilestones.length === 0 ? (
           <div className="card text-center py-8">
             <div className="text-6xl mb-4">🏆</div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">还没有里程碑记录</h3>
-            <p className="text-gray-600 mb-4">记录宝宝的第一个里程碑吧</p>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">没有匹配的记录</h3>
+            <p className="text-gray-600 mb-4">{activeTag ? `当前筛选: #${activeTag}` : '记录宝宝的第一个吧'}</p>
             <button
-              onClick={() => setShowForm(true)}
+              onClick={() => activeTag ? setActiveTag(null) : setShowForm(true)}
               className="btn-primary"
             >
-              添加第一个里程碑
+              {activeTag ? '清除筛选' : '添加第一个记录'}
             </button>
           </div>
         ) : (
           <div className="space-y-4">
-            {milestones.map((milestone) => (
+            {filteredMilestones.map((milestone) => (
               <div key={milestone.id} className="card">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -398,12 +427,13 @@ export default function Milestones() {
                     {milestone.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {milestone.tags.map((tag, index) => (
-                          <span
+                          <button
                             key={index}
-                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-600"
+                            onClick={() => setActiveTag(prev => prev === tag ? null : tag)}
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${activeTag === tag ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-600 hover:bg-purple-200'}`}
                           >
                             #{tag}
-                          </span>
+                          </button>
                         ))}
                       </div>
                     )}

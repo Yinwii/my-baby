@@ -191,19 +191,19 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
             </div>
           </div>
 
-          {/* 里程碑数卡片 */}
+          {/* 记录数卡片 */}
           <div className="card p-4 bg-gradient-to-br from-purple-50 to-purple-100 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white text-xl mb-3">
                 🏆
               </div>
-              <h3 className="text-sm font-medium text-gray-600 mb-2">里程碑数</h3>
+              <h3 className="text-sm font-medium text-gray-600 mb-2">记录数</h3>
               <p className="text-base font-bold text-gray-800">{milestones?.length || 0} 个</p>
               <button 
                 onClick={() => setActiveTab('milestones')}
                 className="text-xs text-orange-600 hover:text-orange-800 font-medium mt-1"
               >
-                查看里程碑 →
+                查看记录 →
               </button>
             </div>
           </div>
@@ -232,7 +232,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           <div className="card p-6 bg-gradient-to-br from-amber-50 to-orange-50 min-h-[400px]">
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
               <span className="mr-2">🏆</span>
-              最近里程碑
+              最近记录
             </h3>
             {milestonesLoading ? (
               <div className="text-center py-8">
@@ -249,6 +249,28 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                       <p className="text-sm text-gray-500 mb-2">
                         {new Date(milestone.date).toLocaleDateString()}
                       </p>
+                      {milestone.description && (
+                        <>
+                          <p
+                            className="text-sm text-gray-600 mb-2 block md:hidden"
+                            style={{ display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                          >
+                            {milestone.description}
+                          </p>
+                          <p
+                            className="text-sm text-gray-600 mb-2 hidden md:block lg:hidden"
+                            style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                          >
+                            {milestone.description}
+                          </p>
+                          <p
+                            className="text-sm text-gray-600 mb-2 hidden lg:block"
+                            style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                          >
+                            {milestone.description}
+                          </p>
+                        </>
+                      )}
                       {milestone.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {milestone.tags.slice(0, 3).map((tag, index) => (
@@ -268,16 +290,27 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
             ) : (
               <div className="text-center py-12 text-gray-500 flex-1 flex flex-col justify-center">
                 <span className="text-4xl mb-4 block">🏆</span>
-                <p className="text-base mb-2">还没有记录里程碑</p>
+                <p className="text-base mb-2">还没有记录</p>
                 <p className="text-sm text-gray-400">记录宝宝的重要成长时刻</p>
               </div>
             )}
-            <button 
-              onClick={() => setActiveTab('milestones')}
-              className="w-full btn-primary bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 border-0 py-3"
-            >
-              {recentMilestones.length > 0 ? '查看全部里程碑' : '记录第一个里程碑'}
-            </button>
+            <div className="grid grid-cols-2 gap-3">
+              <button 
+                onClick={() => {
+                  try { if (typeof window !== 'undefined') { sessionStorage.setItem('openMilestoneForm', '1') } } catch {}
+                  setActiveTab('milestones')
+                }}
+                className="btn-secondary bg-white text-amber-600 border-amber-300 hover:bg-amber-50 py-3"
+              >
+                增加记录
+              </button>
+              <button 
+                onClick={() => setActiveTab('milestones')}
+                className="btn-primary bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 border-0 py-3"
+              >
+                查看全部
+              </button>
+            </div>
           </div>
 
           {/* 右下角：成长记录图表 */}
