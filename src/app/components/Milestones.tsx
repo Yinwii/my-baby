@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useBaby } from '@/hooks/useBaby'
 import { useMilestones } from '@/hooks/useMilestones'
 import { useToastContext } from '@/components/providers/ToastProvider'
@@ -21,6 +21,7 @@ export default function Milestones() {
   const [showForm, setShowForm] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null)
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  const titleInputRef = useRef<HTMLInputElement | null>(null)
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     title: '',
@@ -48,6 +49,15 @@ export default function Milestones() {
       }
     } catch {}
   }, [])
+
+  // Focus title input when form opens
+  useEffect(() => {
+    if (showForm) {
+      setTimeout(() => {
+        titleInputRef.current?.focus()
+      }, 0)
+    }
+  }, [showForm])
 
   const handleSubmit = async () => {
     if (!formData.title) {
@@ -240,7 +250,7 @@ export default function Milestones() {
       )}
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="card text-center">
           <div className="text-3xl mb-2">🏆</div>
           <div className="text-sm text-gray-600 mb-1">总记录</div>
@@ -260,7 +270,7 @@ export default function Milestones() {
             {milestones[0] ? new Date(milestones[0].date).toLocaleDateString('zh-CN') : '-'}
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Add/Edit Form */}
       {showForm && (
@@ -310,8 +320,9 @@ export default function Milestones() {
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  ref={titleInputRef}
                   className="input-field"
-                  placeholder="例: 第一次翻身"
+                  placeholder="标题"
                 />
               </div>
 
@@ -386,7 +397,6 @@ export default function Milestones() {
 
       {/* Milestones Timeline */}
       <div className="space-y-4">
-        <h3 className="text-xl font-bold text-gray-800">时间线</h3>
         {filteredMilestones.length === 0 ? (
           <div className="card text-center py-8">
             <div className="text-6xl mb-4">🏆</div>

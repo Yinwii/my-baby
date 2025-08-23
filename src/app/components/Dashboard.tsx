@@ -194,7 +194,9 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           {/* 身高卡片 */}
           <div className="card p-4 bg-gradient-to-br from-green-50 to-green-100 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
-
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center text-white text-xl mb-3">
+                📏
+              </div>
               <h3 className="text-sm font-medium text-gray-600 mb-2">最新身高</h3>
               <p className="text-base font-bold text-gray-800">{latestHeightRecord?.height ? `${latestHeightRecord.height} cm` : '暂无数据'}</p>
               <button 
@@ -209,7 +211,9 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           {/* 记录数卡片 */}
           <div className="card p-4 bg-gradient-to-br from-purple-50 to-purple-100 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
-
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white text-xl mb-3">
+                🏆
+              </div>
               <h3 className="text-sm font-medium text-gray-600 mb-2">记录数</h3>
               <p className="text-base font-bold text-gray-800">{milestones?.length || 0} 个</p>
               <button 
@@ -224,7 +228,9 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           {/* 新增：图片数量卡片 */}
           <div className="card p-4 bg-gradient-to-br from-orange-50 to-red-100 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
-
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-red-600 flex items-center justify-center text-white text-xl mb-3">
+                📸
+              </div>
               <h3 className="text-sm font-medium text-gray-600 mb-2">图片数量</h3>
               <p className="text-base font-bold text-gray-800">{baby._count?.mediaItems || 0} 张</p>
               <button 
@@ -254,10 +260,22 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                 {recentMilestones.map((milestone) => (
                   <div key={milestone.id} className="flex items-start space-x-4 p-4 bg-white/70 backdrop-blur-sm rounded-lg">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-800 text-base mb-1">{milestone.title}</p>
-                      <p className="text-sm text-gray-500 mb-2">
-                        {new Date(milestone.date).toLocaleDateString()}
-                      </p>
+                      <div className="flex items-center gap-2 mb-2 min-w-0">
+                        <span className="font-medium text-gray-800 text-base truncate">
+                          {milestone.title}
+                        </span>
+                        {milestone.tags.slice(0, 2).map((tag, index) => (
+                          <span key={index} className="shrink-0 text-[11px] bg-amber-200/70 text-amber-800 px-2 py-0.5 rounded-full">
+                            #{tag}
+                          </span>
+                        ))}
+                        {milestone.tags.length > 2 && (
+                          <span className="shrink-0 text-xs text-gray-500">+{milestone.tags.length - 2}</span>
+                        )}
+                        <span className="ml-auto text-sm text-gray-500 whitespace-nowrap">
+                          {new Date(milestone.date).toLocaleDateString()}
+                        </span>
+                      </div>
                       {milestone.description && (
                         <p
                           className="text-sm text-gray-600 mb-2"
@@ -265,18 +283,6 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                         >
                           {milestone.description}
                         </p>
-                      )}
-                      {milestone.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {milestone.tags.slice(0, 3).map((tag, index) => (
-                            <span key={index} className="text-xs bg-amber-200/70 text-amber-800 px-2 py-1 rounded-full">
-                              #{tag}
-                            </span>
-                          ))}
-                          {milestone.tags.length > 3 && (
-                            <span className="text-xs text-gray-500 px-2 py-1">+{milestone.tags.length - 3}</span>
-                          )}
-                        </div>
                       )}
                     </div>
                   </div>
