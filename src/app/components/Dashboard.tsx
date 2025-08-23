@@ -70,7 +70,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
   const latestHeightRecord = records?.find(record => record.height !== null && record.height !== undefined)
   
   // Get recent milestones (latest 3)
-  const recentMilestones = milestones?.slice(0, 5) || []
+  const recentMilestones = milestones?.slice(0, 4) || []
 
   // Prepare chart data - 使用真实的时间戳作为X轴
   const chartData = records?.map(record => ({
@@ -249,9 +249,6 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 左下角：最近里程碑 */}
           <div className="card p-6 bg-gradient-to-br from-amber-50 to-orange-50 min-h-[400px]">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-              最近记录
-            </h3>
             {milestonesLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500 mx-auto mb-3"></div>
@@ -318,10 +315,6 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
 
           {/* 右下角：成长记录图表 */}
           <div className="card p-6 bg-gradient-to-br from-emerald-50 via-cyan-50 to-teal-50 min-h-[400px] flex flex-col shadow-lg">
-            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
-              <span className="mr-3 text-2xl">📈</span>
-              成长趋势图表
-            </h3>
             {chartData.length > 0 ? (
               <div className="flex-1">
                 <div className="h-80 bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-inner">
