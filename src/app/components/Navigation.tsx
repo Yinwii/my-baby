@@ -10,7 +10,7 @@ export default function Navigation({ activeTab, setActiveTab }: NavigationProps)
     { id: 'dashboard', label: '首页', icon: '🏠' },
     // { id: 'baby', label: '宝宝信息', icon: '👶' },
     { id: 'growth', label: '成长记录', icon: '📊' },
-    { id: 'milestones', label: '里程碑', icon: '🏆' },
+    { id: 'milestones', label: '随心记', icon: '🏆' },
     { id: 'photos', label: '照片墙', icon: '📸' },
   ]
 
@@ -33,7 +33,7 @@ export default function Navigation({ activeTab, setActiveTab }: NavigationProps)
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
-                <span className="text-lg">{item.icon}</span>
+                {/* <span className="text-lg">{item.icon}</span> */}
                 <span className="font-medium">{item.label}</span>
               </button>
             ))}

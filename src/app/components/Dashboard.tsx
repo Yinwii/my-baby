@@ -18,6 +18,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
 
   const [currentAge, setCurrentAge] = useState('')
   const [currentDays, setCurrentDays] = useState(0)
+  const [descLines, setDescLines] = useState(3)
 
   // Calculate age when baby data is available
   useEffect(() => {
@@ -45,6 +46,24 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
       }
     }
   }, [baby?.birthDate])
+
+  // Responsive clamp lines for recent record description
+  useEffect(() => {
+    const updateLines = () => {
+      if (typeof window === 'undefined') return
+      const width = window.innerWidth
+      if (width < 768) {
+        setDescLines(1)
+      } else if (width < 1024) {
+        setDescLines(2)
+      } else {
+        setDescLines(3)
+      }
+    }
+    updateLines()
+    window.addEventListener('resize', updateLines)
+    return () => window.removeEventListener('resize', updateLines)
+  }, [])
 
   // Get latest growth record with weight and height separately
   const latestWeightRecord = records?.find(record => record.weight !== null && record.weight !== undefined)
@@ -143,9 +162,9 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                   <p className="text-sm text-purple-600 font-medium mb-2">
                     已经 {currentDays} 天了 ✨
                   </p>
-                  <p className="text-sm text-gray-500 truncate mb-2">
+                  {/* <p className="text-sm text-gray-500 truncate mb-2">
                     出生于 {new Date(baby.birthDate).toLocaleDateString()}
-                  </p>
+                  </p> */}
                   <button 
                     onClick={() => setActiveTab('baby')}
                     className="text-sm text-purple-600 hover:text-purple-800 font-medium"
@@ -160,9 +179,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           {/* 体重卡片 */}
           <div className="card p-4 bg-gradient-to-br from-blue-50 to-blue-100 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl mb-3">
-                ⚖️
-              </div>
+
               <h3 className="text-sm font-medium text-gray-600 mb-2">最新体重</h3>
               <p className="text-base font-bold text-gray-800">{latestWeightRecord?.weight ? `${latestWeightRecord.weight} kg` : '暂无数据'}</p>
               <button 
@@ -177,9 +194,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           {/* 身高卡片 */}
           <div className="card p-4 bg-gradient-to-br from-green-50 to-green-100 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center text-white text-xl mb-3">
-                📏
-              </div>
+
               <h3 className="text-sm font-medium text-gray-600 mb-2">最新身高</h3>
               <p className="text-base font-bold text-gray-800">{latestHeightRecord?.height ? `${latestHeightRecord.height} cm` : '暂无数据'}</p>
               <button 
@@ -194,9 +209,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           {/* 记录数卡片 */}
           <div className="card p-4 bg-gradient-to-br from-purple-50 to-purple-100 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white text-xl mb-3">
-                🏆
-              </div>
+
               <h3 className="text-sm font-medium text-gray-600 mb-2">记录数</h3>
               <p className="text-base font-bold text-gray-800">{milestones?.length || 0} 个</p>
               <button 
@@ -211,9 +224,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           {/* 新增：图片数量卡片 */}
           <div className="card p-4 bg-gradient-to-br from-orange-50 to-red-100 min-h-[60px] md:min-h-[80px] lg:min-h-[100px]">
             <div className="flex flex-col items-center text-center h-full justify-center">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-red-600 flex items-center justify-center text-white text-xl mb-3">
-                📸
-              </div>
+
               <h3 className="text-sm font-medium text-gray-600 mb-2">图片数量</h3>
               <p className="text-base font-bold text-gray-800">{baby._count?.mediaItems || 0} 张</p>
               <button 
@@ -231,7 +242,6 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           {/* 左下角：最近里程碑 */}
           <div className="card p-6 bg-gradient-to-br from-amber-50 to-orange-50 min-h-[400px]">
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-              <span className="mr-2">🏆</span>
               最近记录
             </h3>
             {milestonesLoading ? (
@@ -243,33 +253,18 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
               <div className="space-y-3 mb-4 flex-1">
                 {recentMilestones.map((milestone) => (
                   <div key={milestone.id} className="flex items-start space-x-4 p-4 bg-white/70 backdrop-blur-sm rounded-lg">
-                    <span className="text-2xl">🎯</span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-800 text-base mb-1">{milestone.title}</p>
                       <p className="text-sm text-gray-500 mb-2">
                         {new Date(milestone.date).toLocaleDateString()}
                       </p>
                       {milestone.description && (
-                        <>
-                          <p
-                            className="text-sm text-gray-600 mb-2 block md:hidden"
-                            style={{ display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-                          >
-                            {milestone.description}
-                          </p>
-                          <p
-                            className="text-sm text-gray-600 mb-2 hidden md:block lg:hidden"
-                            style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-                          >
-                            {milestone.description}
-                          </p>
-                          <p
-                            className="text-sm text-gray-600 mb-2 hidden lg:block"
-                            style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-                          >
-                            {milestone.description}
-                          </p>
-                        </>
+                        <p
+                          className="text-sm text-gray-600 mb-2"
+                          style={{ WebkitLineClamp: descLines as unknown as string, WebkitBoxOrient: 'vertical', overflow: 'hidden', display: '-webkit-box' }}
+                        >
+                          {milestone.description}
+                        </p>
                       )}
                       {milestone.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2">
@@ -343,6 +338,10 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                         orientation="left"
                         domain={weightDomain}
                         tick={{ fontSize: 12, fill: '#374151', fontWeight: '500' }}
+                        tickFormatter={(val) => {
+                          const num = Number(val)
+                          return Number.isFinite(num) ? (Math.round(num * 10) / 10).toString() : ''
+                        }}
                         stroke="#0891b2"
                         strokeWidth={2}
                         label={{ value: '体重(kg)', angle: -90, position: 'insideLeft', style: { fontSize: '13px', fill: '#0891b2', fontWeight: 'bold' } }}
@@ -352,6 +351,10 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                         orientation="right"
                         domain={heightDomain}
                         tick={{ fontSize: 12, fill: '#374151', fontWeight: '500' }}
+                        tickFormatter={(val) => {
+                          const num = Number(val)
+                          return Number.isFinite(num) ? Math.round(num).toString() : ''
+                        }}
                         stroke="#059669"
                         strokeWidth={2}
                         label={{ value: '身高(cm)', angle: 90, position: 'insideRight', style: { fontSize: '13px', fill: '#059669', fontWeight: 'bold' } }}
